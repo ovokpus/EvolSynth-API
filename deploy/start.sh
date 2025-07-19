@@ -16,9 +16,6 @@ if [ "${ENVIRONMENT}" = "production" ]; then
         --workers ${WORKERS:-2} \
         --bind 0.0.0.0:${PORT} \
         --timeout ${REQUEST_TIMEOUT:-120} \
-        --keep-alive 2 \
-        --max-requests 1000 \
-        --max-requests-jitter 100 \
         --access-logfile - \
         --error-logfile - \
         --log-level info
