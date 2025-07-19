@@ -6,6 +6,7 @@ Optimized for speed with async processing, batching, and caching
 import asyncio
 import aiohttp
 import time
+import re
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 import redis
@@ -317,12 +318,27 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
-        # Evolution prompts for different types
+        # Evolution prompts for different types - direct and clean
         evolution_prompts = {
-            "simple_evolution": "Make this question more specific and detailed: {question}",
-            "multi_context_evolution": "Rewrite this question to require understanding across multiple concepts: {question}",
-            "reasoning_evolution": "Transform this question to require multi-step reasoning and analysis: {question}"
-        }
+            "simple_evolution": """
+            Create a more specific and detailed version of this question without any conversational phrases:
+
+            Question: {question}
+
+            Evolved Question:""",
+                        "multi_context_evolution": """
+            Rewrite this question to require synthesis across multiple concepts and sources:
+
+            Question: {question}
+
+            Multi-Context Question:""",
+                        "reasoning_evolution": """
+            Transform this question to require logical reasoning and multi-step analysis:
+
+            Question: {question}
+
+            Reasoning Question:"""
+                    }
         
         prompt_template = ChatPromptTemplate.from_template(evolution_prompts.get(evolution_type, evolution_prompts["simple_evolution"]))
         
@@ -334,7 +350,10 @@ class EvolInstructService:
                     
                 # Evolve question using LLM
                 response = llm.invoke(prompt_template.format(question=original_question))
-                evolved_question = response.content.strip()
+                evolved_question = response.content.strip() if hasattr(response, 'content') else str(response).strip()
+                
+                # Clean up any remaining boilerplate phrases
+                evolved_question = self._clean_boilerplate(evolved_question)
                 
                 evolved_q = {
                     "id": f"evolved_{id(question)}",
@@ -362,15 +381,71 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
+        # Create context from documents
+        document_context = "\n\n".join([doc.page_content[:1000] for doc in documents[:3]])
+        
+        answer_prompt = ChatPromptTemplate.from_template("""
+                        Based on the following context, provide a clear and accurate answer to the question:
+
+                        Context:
+                        {context}
+
+                        Question: {question}
+
+                        Answer:""")
+        
         for question in question_batch:
-            # Answer generation logic here
-            answer = {
-                "question_id": question["id"],
-                "answer": f"Generated answer for: {question['question']}"
-            }
-            results.append(answer)
+            try:
+                response = llm.invoke(answer_prompt.format(
+                    context=document_context,
+                    question=question.get('question', '')
+                ))
+                
+                # Clean the response - extract just the answer content
+                answer_text = response.content.strip() if hasattr(response, 'content') else str(response).strip()
+                
+                # Clean up any boilerplate phrases in the answer
+                answer_text = self._clean_boilerplate(answer_text)
+                
+                answer = {
+                    "question_id": question["id"],
+                    "answer": answer_text
+                }
+                results.append(answer)
+                
+            except Exception as e:
+                print(f"Error generating answer: {e}")
+                # Fallback answer without boilerplate
+                answer = {
+                    "question_id": question["id"],
+                    "answer": "Unable to generate answer based on provided context."
+                }
+                results.append(answer)
         
         return results
+    
+    def _clean_boilerplate(self, text: str) -> str:
+        """Remove common boilerplate phrases from generated content"""
+        # Common boilerplate phrases to remove
+        boilerplate_patterns = [
+            r"Certainly!?\s*Here'?s?\s+",
+            r"Generated answer for:\s*",
+            r"Here'?s?\s+a\s+(more\s+)?(specific|detailed|transformed)\s+version\s+",
+            r"^(Sure|Of course|Absolutely)!?\s*",
+            r"that requires multi-step reasoning and analysis:\s*",
+            r"^I'll\s+",
+            r"^Let me\s+",
+            r"^Based on.*?:\s*",
+        ]
+        
+        cleaned_text = text
+        for pattern in boilerplate_patterns:
+            cleaned_text = re.sub(pattern, "", cleaned_text, flags=re.IGNORECASE)
+        
+        # Clean up extra whitespace and newlines
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        return cleaned_text
     
     def _extract_contexts_sync(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Synchronous context extraction"""
