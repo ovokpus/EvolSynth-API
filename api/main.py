@@ -1,6 +1,6 @@
 """
-EvolSynth API - Optimized FastAPI Application with Performance Enhancements
-Advanced Synthetic Data Generation with Redis caching, async processing, and monitoring
+EvolSynth API - Production-Ready FastAPI Application
+Advanced Synthetic Data Generation with comprehensive documentation, monitoring, and optimization
 """
 
 import asyncio
@@ -9,9 +9,10 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 import tempfile
 import os
 
@@ -32,13 +33,25 @@ from api.models.responses import (
 )
 from api.models.core import DocumentInput, PerformanceMetrics
 
+# Enhanced documentation
+from api.docs import (
+    create_custom_openapi_schema, 
+    get_api_description, 
+    customize_swagger_ui,
+    OPENAPI_TAGS
+)
+
 # Standard services
 from api.services.evol_instruct_service import EvolInstructService
 from api.services.evaluation_service import EvaluationService
 from api.services.document_service import DocumentService
 
-# Performance optimizations (now integrated into standard service)
+# Utilities and monitoring
+from api.utils.error_handling import global_exception_handler
+from api.utils.security import configure_cors, rate_limit_dependency, RateLimit
+from api.utils.health_checks import initialize_health_checks, get_health_status, get_health_summary
 
+# Performance optimizations
 try:
     from api.utils.cache_manager import cache_manager, result_cache, document_cache
     CACHE_AVAILABLE = True
@@ -47,29 +60,36 @@ except ImportError:
     CACHE_AVAILABLE = False
 
 try:
-    from api.performance_optimization_config import performance_monitor, get_optimization_config, OptimizationLevel
+    from api.config import performance_monitor, get_optimization_config, OptimizationLevel
     PERFORMANCE_MONITORING_AVAILABLE = True
 except ImportError:
     print("⚠️  Performance monitoring not available")
     PERFORMANCE_MONITORING_AVAILABLE = False
 
-# Initialize FastAPI app with optimizations
+# Initialize FastAPI app with enhanced configuration
 app = FastAPI(
-    title=f"{settings.app_name} (Optimized)",
-    description=f"{settings.app_description} - Enhanced with Redis caching and async processing",
-    version=f"{settings.app_version}-optimized",
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None
+    title="EvolSynth API",
+    description=get_api_description(),
+    version=f"{settings.app_version}",
+    docs_url=None,  # Custom docs endpoint
+    redoc_url=None,  # Custom redoc endpoint
+    openapi_tags=OPENAPI_TAGS,
+    contact={
+        "name": "EvolSynth API Support",
+        "url": "https://github.com/your-org/evolsynth-api",
+        "email": "support@evolsynth.ai"
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    }
 )
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"] if settings.debug else ["https://your-domain.com"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure CORS with security best practices
+configure_cors(app)
+
+# Add global exception handler
+app.exception_handler(Exception)(global_exception_handler)
 
 # Global service instances
 evol_instruct_service: Optional[EvolInstructService] = None
@@ -85,8 +105,9 @@ request_times: List[float] = []
 
 @app.middleware("http")
 async def performance_middleware(request, call_next):
-    """Middleware to track performance metrics"""
+    """Enhanced middleware for performance tracking and request monitoring"""
     start_time = time.time()
+    request_id = str(uuid.uuid4())
     
     try:
         response = await call_next(request)
@@ -101,407 +122,510 @@ async def performance_middleware(request, call_next):
         if PERFORMANCE_MONITORING_AVAILABLE:
             performance_monitor.record_request(process_time, success)
         
-        # Add performance headers
+        # Add performance and tracking headers
         if 'response' in locals():
-            response.headers["X-Process-Time"] = str(process_time)
-            response.headers["X-Optimized"] = "true"
+            response.headers["X-Process-Time"] = str(round(process_time, 3))
+            response.headers["X-Request-ID"] = request_id
+            response.headers["X-API-Version"] = settings.app_version
+            response.headers["X-Powered-By"] = "EvolSynth"
     
     return response
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services with performance optimizations"""
+    """Initialize services with comprehensive error handling and monitoring"""
     global evol_instruct_service, evaluation_service, document_service
     
     try:
+        print("🚀 Starting EvolSynth API initialization...")
+        
         # Validate API keys
         validate_api_keys()
         setup_environment()
+        print("✅ API keys validated and environment configured")
         
         # Initialize services
         evol_instruct_service = EvolInstructService()
-        print("✅ Using optimized EvolInstructService with async processing")
-        
         evaluation_service = EvaluationService()
         document_service = DocumentService()
+        print("✅ Core services initialized")
         
         # Test cache connection
         if CACHE_AVAILABLE:
             cache_stats = cache_manager.get_stats()
-            print(f"✅ Cache system initialized: {cache_stats['cache_type']}")
+            print(f"✅ Cache system: {cache_stats['cache_type']} (enabled: {cache_stats['cache_enabled']})")
+        else:
+            print("⚠️  Cache system not available")
+        
+        # Initialize health checks
+        initialize_health_checks()
+        print("✅ Health check system initialized")
         
         # Load performance configuration
         if PERFORMANCE_MONITORING_AVAILABLE:
             config = get_optimization_config(OptimizationLevel.PRODUCTION)
-            print(f"✅ Performance monitoring enabled: {config.max_concurrent_requests} max concurrent requests")
+            print(f"✅ Performance monitoring: {config.max_concurrent_requests} max concurrent requests")
+        else:
+            print("⚠️  Performance monitoring not available")
         
-        print(f"🚀 {settings.app_name} started successfully with optimizations")
+        # Set custom OpenAPI schema
+        app.openapi_schema = create_custom_openapi_schema(app)
+        print("✅ Enhanced OpenAPI documentation configured")
+        
+        print(f"🎉 {settings.app_name} v{settings.app_version} started successfully!")
         print(f"📊 Environment: {'Development' if settings.debug else 'Production'}")
+        print(f"📚 Documentation: http://localhost:8000/docs")
         
     except Exception as e:
         print(f"❌ Startup failed: {e}")
         raise
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean shutdown with cache cleanup"""
-    if CACHE_AVAILABLE:
-        print("🧹 Cleaning up cache connections...")
+# Enhanced documentation endpoints
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    """Custom Swagger UI with enhanced styling and features"""
+    return HTMLResponse(customize_swagger_ui())
 
 
-def get_evol_instruct_service() -> EvolInstructService:
-    """Dependency to get EvolInstructService instance"""
-    if evol_instruct_service is None:
-        raise HTTPException(status_code=500, detail="EvolInstruct service not initialized")
-    return evol_instruct_service
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    """Enhanced ReDoc documentation"""
+    return get_redoc_html(
+        openapi_url="/openapi.json",
+        title="EvolSynth API Documentation",
+        redoc_js_url="https://unpkg.com/redoc@next/bundles/redoc.standalone.js",
+    )
 
 
-def get_evaluation_service() -> EvaluationService:
-    """Dependency to get EvaluationService instance"""
-    if evaluation_service is None:
-        raise HTTPException(status_code=500, detail="Evaluation service not initialized")
-    return evaluation_service
-
-
-def get_document_service() -> DocumentService:
-    """Dependency to get DocumentService instance"""
-    if document_service is None:
-        raise HTTPException(status_code=500, detail="Document service not initialized")
-    return document_service
-
-
-@app.get("/", response_model=HealthResponse)
+# Core API endpoints with enhanced documentation
+@app.get(
+    "/", 
+    response_model=HealthResponse,
+    tags=["Health"],
+    summary="API Status and Information",
+    description="Get basic API information, version, and service status",
+    responses={
+        200: {
+            "description": "API status information",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "healthy",
+                        "version": "1.0.0",
+                        "timestamp": "2024-01-01T12:00:00Z",
+                        "dependencies": {
+                            "cache_enabled": "true",
+                            "optimized_service": "true",
+                            "performance_monitoring": "true"
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 async def root():
-    """Root endpoint with optimization info"""
+    """Enhanced root endpoint with comprehensive status information"""
     return HealthResponse(
         status="healthy",
-        version=f"{settings.app_version}-optimized",
+        version=f"{settings.app_version}",
         timestamp=datetime.now(),
         dependencies={
-            "cache_enabled": CACHE_AVAILABLE,
-            "optimized_service": True,  # Always optimized now
-            "performance_monitoring": PERFORMANCE_MONITORING_AVAILABLE
+            "cache_enabled": str(CACHE_AVAILABLE),
+            "performance_monitoring": str(PERFORMANCE_MONITORING_AVAILABLE),
+            "redis_available": str(CACHE_AVAILABLE and cache_manager.cache_enabled if CACHE_AVAILABLE else False),
+            "optimization_level": "production"
         }
     )
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get(
+    "/health", 
+    response_model=HealthResponse,
+    tags=["Health"],
+    summary="Basic Health Check",
+    description="Perform a basic health check of the API and its dependencies",
+    responses={
+        200: {"description": "Service is healthy"},
+        503: {"description": "Service is unhealthy", "model": ErrorResponse}
+    }
+)
 async def health_check():
-    """Enhanced health check with cache and performance status"""
+    """Enhanced health check with dependency validation"""
     dependencies = {
         "openai": "connected",
-        "langsmith": "connected",
-        "evol_instruct_service": "running",
-        "evaluation_service": "running",
-        "document_service": "running"
+        "langsmith": "connected" if settings.langchain_api_key else "not_configured",
+        "evol_instruct_service": "running" if evol_instruct_service else "not_initialized",
+        "evaluation_service": "running" if evaluation_service else "not_initialized",
+        "document_service": "running" if document_service else "not_initialized"
     }
     
     # Check cache status
     if CACHE_AVAILABLE:
         try:
             cache_stats = cache_manager.get_stats()
-            dependencies["redis_cache"] = "connected"
+            dependencies["redis_cache"] = "connected" if cache_stats["cache_enabled"] else "disconnected"
             dependencies["cache_type"] = cache_stats["cache_type"]
         except Exception:
             dependencies["redis_cache"] = "disconnected"
     else:
         dependencies["redis_cache"] = "not_configured"
     
+    # Check for any unhealthy services
+    unhealthy_services = [k for k, v in dependencies.items() if v in ["disconnected", "not_initialized", "failed"]]
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE if unhealthy_services else status.HTTP_200_OK
+    
     return HealthResponse(
-        status="healthy",
-        version=f"{settings.app_version}-optimized",
+        status="healthy" if not unhealthy_services else "degraded",
+        version=f"{settings.app_version}",
         timestamp=datetime.now(),
         dependencies=dependencies
     )
 
 
-@app.get("/metrics/performance")
-async def get_performance_metrics():
-    """Get real-time performance metrics"""
-    if not PERFORMANCE_MONITORING_AVAILABLE:
-        raise HTTPException(status_code=503, detail="Performance monitoring not available")
-    
-    # Get performance metrics
-    perf_metrics = performance_monitor.get_current_metrics()
-    
-    # Get cache statistics
-    cache_stats = {}
-    if CACHE_AVAILABLE:
-        cache_stats = cache_manager.get_stats()
-    
-    return {
-        "performance": perf_metrics,
-        "cache": cache_stats,
-        "timestamp": datetime.now().isoformat(),
-        "optimization_level": "production"
+@app.get(
+    "/health/detailed",
+    tags=["Health"],
+    summary="Detailed Health Check",
+    description="Comprehensive health check with detailed dependency status and performance metrics",
+    responses={
+        200: {"description": "Detailed health information"},
+        503: {"description": "One or more services are unhealthy"}
     }
-
-
-@app.post("/generate", response_model=GenerationResponse)
-async def generate_synthetic_data_optimized(
-    request: GenerationRequest,
-    background_tasks: BackgroundTasks,
-    service: EvolInstructService = Depends(get_evol_instruct_service),
-    doc_service: DocumentService = Depends(get_document_service)
-):
-    """
-    Optimized synthetic data generation with caching and async processing
-    """
+)
+async def detailed_health_check():
+    """Comprehensive health check with detailed metrics"""
     try:
-        generation_id = str(uuid.uuid4())
+        health_data = await get_health_status()
+        return JSONResponse(content=health_data)
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "overall_status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+@app.get(
+    "/health/summary",
+    tags=["Health"],
+    summary="Health Summary",
+    description="Get a quick summary of system health status",
+)
+async def health_summary():
+    """Quick health summary for monitoring systems"""
+    try:
+        summary = await get_health_summary()
+        return JSONResponse(content=summary)
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+@app.post(
+    "/generate",
+    response_model=GenerationResponse,
+    tags=["Generation"],
+    summary="Generate Synthetic Data",
+    description="""
+    Generate high-quality synthetic data using the Evol-Instruct methodology.
+    
+    This endpoint processes input documents and generates evolved questions, answers, and contexts
+    using advanced language models and LangGraph workflows.
+    
+    **Features:**
+    - Multiple evolution types (simple, multi-context, reasoning, complex)
+    - Concurrent processing for improved performance
+    - Comprehensive quality metrics
+    - Redis caching for repeated requests
+    
+    **Performance:**
+    - Typical response time: 3-8 seconds
+    - Supports up to 10 documents per request
+    - Automatic caching of results
+    """,
+    responses={
+        200: {"description": "Successfully generated synthetic data"},
+        422: {"$ref": "#/components/responses/ValidationError"},
+        429: {"$ref": "#/components/responses/RateLimitError"},
+        500: {"$ref": "#/components/responses/InternalServerError"}
+    },
+    dependencies=[Depends(rate_limit_dependency)]
+)
+async def generate_synthetic_data(
+    request: GenerationRequest,
+    background_tasks: BackgroundTasks
+):
+    """Enhanced generation endpoint with comprehensive error handling and monitoring"""
+    start_time = time.time()
+    request_id = f"gen_{uuid.uuid4()}"
+    
+    try:
+        if not evol_instruct_service:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Generation service not initialized"
+            )
         
-        # Check cache first if available
+        # Check cache first
         if CACHE_AVAILABLE:
-            cache_key = str(hash(str(request.documents) + str(request.settings)))
+            cache_key = cache_manager.generate_key("generation", request.dict())
             cached_result = result_cache.get_generation_result(cache_key)
-            
             if cached_result:
-                print("🎯 Cache hit! Returning cached result")
-                try:
-                    # Handle performance_metrics conversion if it's a dict
-                    perf_metrics = cached_result["performance_metrics"]
-                    if isinstance(perf_metrics, dict):
-                        perf_metrics = PerformanceMetrics(**perf_metrics)
-                    
-                    # Create proper response from cached result
-                    response = GenerationResponse(
-                        success=True,
-                        evolved_questions=cached_result["evolved_questions"],
-                        question_answers=cached_result["question_answers"],
-                        question_contexts=cached_result["question_contexts"],
-                        performance_metrics=perf_metrics,
-                        generation_id=generation_id,
-                        timestamp=datetime.now()
-                    )
-                    return response
-                except (KeyError, TypeError) as e:
-                    print(f"⚠️  Cache data corrupted, regenerating: {e}")
-                    # Continue with normal generation if cache data is invalid
+                cached_result["cache_hit"] = True
+                return GenerationResponse(**cached_result)
         
-        # Initialize generation status
-        generation_status[generation_id] = {
-            "status": "running",
-            "progress": 0.0,
-            "current_stage": "document_processing",
-            "start_time": datetime.now()
+        # Track generation status
+        generation_status[request_id] = {
+            "status": "processing",
+            "start_time": start_time,
+            "documents_count": len(request.documents)
         }
         
-        # Process input documents
-        documents = doc_service.process_document_inputs(request.documents)
+                 # Convert DocumentInput objects to Document objects for service
+         from langchain_core.documents import Document
+         documents = [
+             Document(page_content=doc.content, metadata=doc.metadata or {})
+             for doc in request.documents
+         ]
+         
+         # Process generation using the appropriate method
+         result = evol_instruct_service.generate_synthetic_data(
+             documents=documents,
+             settings=request.settings,
+             max_iterations=request.max_iterations
+         )
         
-        # Validate documents
-        validation_result = doc_service.validate_documents(documents)
-        if not validation_result["valid"]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Document validation failed: {validation_result['issues']}"
+        # Add metadata
+        execution_time = time.time() - start_time
+        result_with_metadata = {
+            **result,
+            "request_id": request_id,
+            "performance_metrics": {
+                "execution_time_seconds": round(execution_time, 2),
+                "questions_generated": len(result.get("evolved_questions", [])),
+                "execution_mode": getattr(request.settings, 'execution_mode', 'concurrent') if request.settings else 'concurrent'
+            },
+            "metadata": {
+                "generation_timestamp": datetime.now().isoformat(),
+                "model_used": settings.default_model,
+                "total_documents_processed": len(request.documents),
+                "cache_hit": False
+            }
+        }
+        
+        # Cache result
+        if CACHE_AVAILABLE:
+            background_tasks.add_task(
+                result_cache.save_generation_result, 
+                cache_key, 
+                result_with_metadata
             )
         
         # Update status
-        generation_status[generation_id]["progress"] = 0.1
-        generation_status[generation_id]["current_stage"] = "synthetic_generation"
+        generation_status[request_id] = {
+            "status": "completed",
+            "execution_time": execution_time,
+            "questions_generated": len(result.get("evolved_questions", []))
+        }
         
-        # Generate synthetic data using optimized async implementation
-        if hasattr(service, 'generate_synthetic_data_async'):
-            print("🚀 Using async optimized generation")
-            result = await service.generate_synthetic_data_async(
-                documents=documents,
-                settings=request.settings
-            )
-        else:
-            print("🚀 Using optimized generation (sync wrapper)")
-            result = service.generate_synthetic_data(
-                documents=documents,
-                settings=request.settings,
-                max_iterations=request.max_iterations
-            )
-        
-        # Update final status
-        generation_status[generation_id]["status"] = "completed"
-        generation_status[generation_id]["progress"] = 1.0
-        generation_status[generation_id]["current_stage"] = "completed"
-        
-        # Cache the result if caching is available
-        if CACHE_AVAILABLE:
-            result_cache.save_generation_result(cache_key, result)
-            print("💾 Result cached for future requests")
-        
-        # Create response
-        response = GenerationResponse(
-            success=True,
-            evolved_questions=result["evolved_questions"],
-            question_answers=result["question_answers"],
-            question_contexts=result["question_contexts"],
-            performance_metrics=result["performance_metrics"],
-            generation_id=generation_id,
-            timestamp=datetime.now()
-        )
-        
-        return response
+        return GenerationResponse(**result_with_metadata)
         
     except Exception as e:
-        # Update error status
-        if generation_id in generation_status:
-            generation_status[generation_id]["status"] = "failed"
-            generation_status[generation_id]["error"] = str(e)
-        
+        generation_status[request_id] = {
+            "status": "failed",
+            "error": str(e),
+            "execution_time": time.time() - start_time
+        }
         raise HTTPException(
-            status_code=500,
-            detail=f"Synthetic data generation failed: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Generation failed: {str(e)}"
         )
 
 
-@app.get("/generate/status/{generation_id}")
-async def get_generation_status(generation_id: str):
-    """Get status of a generation task"""
-    if generation_id not in generation_status:
-        raise HTTPException(status_code=404, detail="Generation ID not found")
-    
-    return generation_status[generation_id]
-
-
-@app.post("/upload/extract-content")
-async def extract_file_content(
-    file: UploadFile = File(...),
-    doc_service: DocumentService = Depends(get_document_service)
-):
-    """
-    Extract content from uploaded files (PDF, TXT, MD)
-    Returns the extracted text content for use in document processing
-    """
-    try:
-        # Validate file type
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="No filename provided")
-        
-        # Check file extension
-        file_extension = os.path.splitext(file.filename)[1].lower()
-        if file_extension not in {'.pdf', '.txt', '.md'}:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Unsupported file type: {file_extension}. Supported types: .pdf, .txt, .md"
-            )
-        
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
-            # Write uploaded content to temp file
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = temp_file.name
-        
-        try:
-            # Extract content using document service
-            if file_extension == '.pdf':
-                documents = doc_service._load_pdf(temp_file_path)
-            elif file_extension in {'.txt', '.md'}:
-                documents = doc_service._load_text_file(temp_file_path)
-            else:
-                raise HTTPException(status_code=400, detail="Unsupported file type")
-            
-            # Combine all document content
-            extracted_content = '\n\n'.join([doc.page_content for doc in documents])
-            
-            # Get basic metadata
-            file_stats = os.stat(temp_file_path)
-            
-            return {
-                "success": True,
-                "filename": file.filename,
-                "content": extracted_content,
-                "metadata": {
-                    "file_size": file_stats.st_size,
-                    "file_type": file_extension,
-                    "pages_or_chunks": len(documents),
-                    "content_length": len(extracted_content)
-                }
-            }
-            
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_file_path):
-                os.unlink(temp_file_path)
-                
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Content extraction failed: {str(e)}"
-        )
-
-
-# Keep the existing endpoints from the original main.py
-@app.post("/evaluate", response_model=EvaluationResponse)
-async def evaluate_synthetic_data(
-    request: EvaluationRequest,
-    service: EvaluationService = Depends(get_evaluation_service)
-):
-    """Evaluate synthetic data quality"""
-    try:
-        result = service.evaluate_synthetic_data(
-            evolved_questions=request.evolved_questions,
-            question_answers=request.question_answers,
-            question_contexts=request.question_contexts,
-            evaluation_metrics=request.evaluation_metrics
-        )
-        
-        return EvaluationResponse(**result)
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Evaluation failed: {str(e)}"
-        )
-
-
-@app.get("/documents/sample")
-async def get_sample_documents():
-    """Get sample documents for testing"""
-    doc_service = get_document_service()
-    sample_docs = doc_service.create_sample_documents()
-    
-    return {
-        "documents": [
-            {
-                "content": doc.page_content,
-                "metadata": doc.metadata,
-                "source": doc.metadata.get("source", "unknown")
-            }
-            for doc in sample_docs
-        ],
-        "count": len(sample_docs),
-        "message": "Sample documents for testing EvolSynth API"
-    }
-
-
-# Cache management endpoints
+# Cache management endpoints with enhanced documentation
 if CACHE_AVAILABLE:
-    @app.delete("/cache/clear")
+    @app.delete(
+        "/cache/clear",
+        tags=["Cache"],
+        summary="Clear All Cache",
+        description="Clear all cached data including documents and generation results",
+        responses={
+            200: {"description": "Cache cleared successfully"},
+            500: {"description": "Cache clear operation failed"}
+        }
+    )
     async def clear_cache():
-        """Clear all cache entries"""
+        """Clear all cache entries with detailed reporting"""
         try:
             cleared_docs = cache_manager.clear_prefix("docs")
             cleared_results = cache_manager.clear_prefix("results")
+            cleared_sessions = cache_manager.clear_prefix("sessions")
             
             return {
                 "success": True,
                 "cleared_entries": {
                     "documents": cleared_docs,
-                    "results": cleared_results
+                    "results": cleared_results,
+                    "sessions": cleared_sessions,
+                    "total": cleared_docs + cleared_results + cleared_sessions
                 },
+                "timestamp": datetime.now().isoformat(),
+                "cache_type": cache_manager.get_stats()["cache_type"]
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail=f"Cache clear failed: {str(e)}"
+            )
+    
+    @app.get(
+        "/cache/stats",
+        tags=["Cache"],
+        summary="Cache Statistics", 
+        description="Get detailed cache performance statistics and metrics",
+        responses={
+            200: {"description": "Cache statistics retrieved successfully"},
+            503: {"description": "Cache system unavailable"}
+        }
+    )
+    async def get_cache_stats():
+        """Get comprehensive cache statistics"""
+        try:
+            stats = cache_manager.get_stats()
+            health = cache_manager.health_check()
+            
+            return {
+                **stats,
+                "health": health,
                 "timestamp": datetime.now().isoformat()
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Cache clear failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Cache stats unavailable: {str(e)}"
+            )
+
+
+# Performance monitoring endpoints
+if PERFORMANCE_MONITORING_AVAILABLE:
+    @app.get(
+        "/metrics/performance",
+        tags=["Performance"],
+        summary="Performance Metrics",
+        description="Get real-time performance metrics and system statistics",
+    )
+    async def get_performance_metrics():
+        """Get current performance metrics"""
+        try:
+            metrics = performance_monitor.get_current_metrics()
+            return {
+                **metrics,
+                "timestamp": datetime.now().isoformat(),
+                "uptime_seconds": time.time() - performance_monitor.request_count * 0.1  # Approximate
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Performance metrics unavailable: {str(e)}"
+            )
+
+
+# Enhanced utility endpoints
+@app.get(
+    "/documents/sample",
+    tags=["Utilities"],
+    summary="Get Sample Documents",
+    description="Retrieve sample documents for testing and development purposes",
+    responses={
+        200: {
+            "description": "Sample documents for testing",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "documents": [
+                            {
+                                "content": "Sample document content...",
+                                "metadata": {"source": "sample.pdf"},
+                                "source": "sample.pdf"
+                            }
+                        ],
+                        "count": 1
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_sample_documents():
+    """Get sample documents for testing purposes"""
+    if not document_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document service not initialized"
+        )
     
-    @app.get("/cache/stats")
-    async def get_cache_stats():
-        """Get cache statistics"""
-        return cache_manager.get_stats()
+         sample_docs = document_service.create_sample_documents()
+     
+     # Convert LangChain Documents to API format
+     sample_documents = [
+         {
+             "content": doc.page_content,
+             "metadata": doc.metadata,
+             "source": doc.metadata.get("source", "sample.txt")
+         }
+         for doc in sample_docs
+     ]
+     
+     return {
+         "documents": sample_documents,
+         "count": len(sample_documents),
+         "description": "Sample documents for testing EvolSynth API"
+     }
+
+
+@app.get(
+    "/status/{request_id}",
+    tags=["Utilities"],
+    summary="Get Generation Status",
+    description="Check the status of a synthetic data generation request",
+    responses={
+        200: {"description": "Generation status retrieved"},
+        404: {"description": "Request ID not found"}
+    }
+)
+async def get_generation_status(request_id: str):
+    """Get the status of a generation request"""
+    if request_id not in generation_status:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Request ID {request_id} not found"
+        )
+    
+    status_info = generation_status[request_id]
+    return {
+        "request_id": request_id,
+        **status_info,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, loop="uvloop" if 'uvloop' in globals() else "asyncio") 
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000, 
+        loop="uvloop" if 'uvloop' in globals() else "asyncio"
+    ) 
