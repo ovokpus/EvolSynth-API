@@ -1,11 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowRight, Sparkles, Zap, Brain } from "lucide-react";
+import Documentation from "./Documentation";
 
 export default function HeroSection() {
+  const [showDocumentation, setShowDocumentation] = useState(false);
+
   const scrollToInterface = () => {
     const element = document.querySelector('#interface');
     element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const openDocumentation = () => {
+    // Option 1: Open external Swagger docs (current implementation)
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    window.open(`${baseUrl}/docs`, '_blank');
+    
+    // Option 2: Show modal documentation (uncomment to use)
+    // setShowDocumentation(true);
   };
 
   return (
@@ -73,9 +86,13 @@ export default function HeroSection() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300 text-white" />
             </button>
             
-            <button className="group bg-white/80 hover:bg-white/90 backdrop-blur-sm border border-light-300 hover:border-primary-300 text-primary-700 font-medium px-8 py-4 rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-light-lg">
+            <button 
+              onClick={openDocumentation}
+              className="group bg-white/80 hover:bg-white/90 backdrop-blur-sm border border-light-300 hover:border-primary-300 text-primary-700 font-medium px-8 py-4 rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-light-lg hover:scale-105"
+            >
               <Brain className="w-5 h-5 text-primary-700" />
               <span className="text-primary-700">View Documentation</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 text-primary-700" />
             </button>
           </div>
 
@@ -116,6 +133,11 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Documentation Modal */}
+      {showDocumentation && (
+        <Documentation onClose={() => setShowDocumentation(false)} />
+      )}
     </section>
   );
 } 

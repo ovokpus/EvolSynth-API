@@ -196,21 +196,32 @@ class APIClient {
       // Optionally call evaluation endpoint if enabled
       let evaluationResponse: EvaluationResponse | undefined;
       if (settings.evaluationEnabled && generationResponse.data.evolved_questions.length > 0) {
-        const evalRequest: EvaluationRequest = {
-          evolved_questions: generationResponse.data.evolved_questions,
-          question_answers: generationResponse.data.question_answers,
-          question_contexts: generationResponse.data.question_contexts,
-          evaluation_metrics: ['question_quality', 'answer_accuracy', 'evolution_effectiveness'],
-        };
+        try {
+          console.log('🔍 Calling evaluation endpoint...');
+          const evalRequest: EvaluationRequest = {
+            evolved_questions: generationResponse.data.evolved_questions,
+            question_answers: generationResponse.data.question_answers,
+            question_contexts: generationResponse.data.question_contexts,
+            evaluation_metrics: ['question_quality', 'answer_accuracy', 'evolution_effectiveness'],
+          };
 
-        const evalResult = await this.request<EvaluationResponse>('/evaluate', {
-          method: 'POST',
-          body: JSON.stringify(evalRequest),
-        });
+          const evalResult = await this.request<EvaluationResponse>('/evaluate', {
+            method: 'POST',
+            body: JSON.stringify(evalRequest),
+          });
 
-        if (evalResult.success && evalResult.data) {
-          evaluationResponse = evalResult.data;
+          if (evalResult.success && evalResult.data) {
+            evaluationResponse = evalResult.data;
+            console.log('✅ Evaluation completed:', evaluationResponse.overall_scores);
+          } else {
+            console.warn('⚠️ Evaluation failed:', evalResult.error);
+          }
+        } catch (error) {
+          console.error('❌ Evaluation error:', error);
+          // Continue without evaluation rather than failing the entire request
         }
+      } else {
+        console.log(`⚠️ Evaluation skipped: enabled=${settings.evaluationEnabled}, questions=${generationResponse.data.evolved_questions.length}`);
       }
 
       // Convert to frontend format

@@ -1,0 +1,265 @@
+"use client";
+
+import { useState } from "react";
+import { Book, Code, Play, ArrowRight, ExternalLink, Copy, CheckCircle } from "lucide-react";
+
+interface DocumentationProps {
+  onClose: () => void;
+}
+
+export default function Documentation({ onClose }: DocumentationProps) {
+  const [activeSection, setActiveSection] = useState('overview');
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const copyToClipboard = async (code: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(id);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy code: ', err);
+    }
+  };
+
+  const sections = [
+    { id: 'overview', title: 'Overview', icon: Book },
+    { id: 'quickstart', title: 'Quick Start', icon: Play },
+    { id: 'api', title: 'API Reference', icon: Code },
+    { id: 'examples', title: 'Examples', icon: ArrowRight },
+  ];
+
+  const generateExample = `import requests
+
+# Generate synthetic data
+response = requests.post("http://localhost:8000/generate", json={
+    "documents": [
+        {
+            "content": "Machine learning algorithms enable computers to learn from data...",
+            "metadata": {"source": "ml_intro.txt", "type": "text"}
+        }
+    ],
+    "settings": {
+        "execution_mode": "concurrent",
+        "simple_evolution_count": 3,
+        "multi_context_evolution_count": 2,
+        "reasoning_evolution_count": 2,
+        "temperature": 0.7
+    },
+    "max_iterations": 1
+})
+
+result = response.json()
+print(f"Generated {len(result['evolved_questions'])} questions!")`;
+
+  const evaluateExample = `# Evaluate quality
+eval_response = requests.post("http://localhost:8000/evaluate", json={
+    "evolved_questions": result["evolved_questions"],
+    "question_answers": result["question_answers"],
+    "question_contexts": result["question_contexts"],
+    "evaluation_metrics": ["question_quality", "answer_accuracy", "evolution_effectiveness"]
+})
+
+evaluation = eval_response.json()
+print(f"Quality scores: {evaluation['overall_scores']}")`;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="bg-primary-50 border-b border-primary-200 p-6 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Book className="w-6 h-6 text-primary-600" />
+            <h2 className="text-2xl font-bold text-primary-700">EvolSynth API Documentation</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-primary-500 hover:text-primary-700 transition-colors text-2xl font-bold"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex h-full max-h-[calc(90vh-100px)]">
+          {/* Sidebar */}
+          <div className="w-64 bg-light-50 border-r border-light-200 p-4">
+            <nav className="space-y-2">
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
+                    activeSection === section.id
+                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                      : 'text-primary-600 hover:bg-light-100'
+                  }`}
+                >
+                  <section.icon className="w-4 h-4" />
+                  <span className="font-medium">{section.title}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="mt-8 p-3 bg-primary-50 rounded-lg border border-primary-200">
+              <h4 className="font-medium text-primary-700 mb-2">Interactive API Docs</h4>
+              <p className="text-sm text-primary-600 mb-3">
+                Explore the full API with Swagger UI
+              </p>
+              <a
+                href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/docs`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-1 text-primary-600 hover:text-primary-500 text-sm"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Open Swagger Docs</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {activeSection === 'overview' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-primary-700 mb-4">Welcome to EvolSynth API</h3>
+                  <p className="text-primary-600 mb-4">
+                    EvolSynth API provides advanced synthetic data generation using LangGraph-based Evol-Instruct methodology. 
+                    Transform your documents into sophisticated evaluation datasets with intelligent question evolution.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-accent-purple to-accent-violet text-white p-4 rounded-xl">
+                    <h4 className="font-semibold mb-2">🎯 Smart Evolution</h4>
+                    <p className="text-sm opacity-90">Three-tier question evolution: Simple → Multi-Context → Reasoning</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-accent-violet to-accent-fuchsia text-white p-4 rounded-xl">
+                    <h4 className="font-semibold mb-2">⚡ Lightning Fast</h4>
+                    <p className="text-sm opacity-90">Concurrent processing - 3x faster generation</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-accent-fuchsia to-accent-pink text-white p-4 rounded-xl">
+                    <h4 className="font-semibold mb-2">🛡️ Quality Assured</h4>
+                    <p className="text-sm opacity-90">Built-in LLM-as-judge evaluation with LangSmith tracking</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'quickstart' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-primary-700 mb-4">Quick Start Guide</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-2">1. Health Check</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <code className="text-green-400 text-sm">curl http://localhost:8000/health</code>
+                      <button
+                        onClick={() => copyToClipboard('curl http://localhost:8000/health', 'health')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'health' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-2">2. Get Sample Documents</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <code className="text-green-400 text-sm">curl http://localhost:8000/documents/sample</code>
+                      <button
+                        onClick={() => copyToClipboard('curl http://localhost:8000/documents/sample', 'sample')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'sample' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-2">3. Generate Synthetic Data</h4>
+                    <p className="text-primary-600 text-sm mb-2">Use the interface above or make direct API calls</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'api' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-primary-700 mb-4">API Endpoints</h3>
+                
+                <div className="space-y-4">
+                  <div className="border border-light-300 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-mono">POST</span>
+                      <code className="font-mono text-sm">/generate</code>
+                    </div>
+                    <p className="text-primary-600 text-sm">Generate synthetic evaluation data from documents</p>
+                  </div>
+
+                  <div className="border border-light-300 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-mono">POST</span>
+                      <code className="font-mono text-sm">/evaluate</code>
+                    </div>
+                    <p className="text-primary-600 text-sm">Evaluate quality of generated synthetic data</p>
+                  </div>
+
+                  <div className="border border-light-300 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono">GET</span>
+                      <code className="font-mono text-sm">/health</code>
+                    </div>
+                    <p className="text-primary-600 text-sm">Check API health and service status</p>
+                  </div>
+
+                  <div className="border border-light-300 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-mono">GET</span>
+                      <code className="font-mono text-sm">/documents/sample</code>
+                    </div>
+                    <p className="text-primary-600 text-sm">Get sample documents for testing</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'examples' && (
+              <div className="space-y-6">
+                <h3 className="text-xl font-bold text-primary-700 mb-4">Code Examples</h3>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-3">Python Example - Generate Data</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <pre className="text-green-400 text-sm overflow-x-auto">{generateExample}</pre>
+                      <button
+                        onClick={() => copyToClipboard(generateExample, 'generate')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'generate' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-3">Python Example - Evaluate Quality</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <pre className="text-green-400 text-sm overflow-x-auto">{evaluateExample}</pre>
+                      <button
+                        onClick={() => copyToClipboard(evaluateExample, 'evaluate')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'evaluate' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+} 

@@ -86,6 +86,13 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
     URL.revokeObjectURL(url);
   };
 
+  // Calculate overall quality score from individual metrics
+  const calculateOverallQuality = () => {
+    if (!results?.evaluation?.overall_scores) return 0;
+    const scores = Object.values(results.evaluation.overall_scores);
+    return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  };
+
   const shareResults = () => {
     const shareData = {
       title: 'EvolSynth Generation Results',
@@ -96,9 +103,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
     if (navigator.share) {
       navigator.share(shareData);
     } else {
-      const qualityScore = results?.evaluation?.overall_scores 
-        ? Math.round(Object.values(results.evaluation.overall_scores)[0] * 100) 
-        : 0;
+      const qualityScore = Math.round(calculateOverallQuality() * 100);
       copyToClipboard(
         `EvolSynth Results: Generated ${displayQuestions.length} questions with ${qualityScore}% quality score`,
         'share'
@@ -167,7 +172,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
       {/* Enhanced Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white/80 rounded-xl p-4 border border-light-300 text-center shadow-light-lg">
-          <div className="text-2xl font-bold text-primary-700">{results.questions?.length || 0}</div>
+          <div className="text-2xl font-bold text-primary-700">{results.evolved_questions?.length || 0}</div>
           <div className="text-sm text-primary-600">Questions Generated</div>
           <div className="text-xs text-light-500 mt-1">
             {Object.entries(questionsByLevel).map(([level, count]) => `${level}: ${count}`).join(', ')}
@@ -179,7 +184,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
           <div className="text-xs text-light-500 mt-1">Input sources analyzed</div>
         </div>
         <div className="bg-white/80 rounded-xl p-4 border border-light-300 text-center shadow-light-lg">
-          <div className="text-2xl font-bold text-primary-700">{Math.round((results.evaluation?.overallQuality || 0) * 100)}%</div>
+          <div className="text-2xl font-bold text-primary-700">{Math.round(calculateOverallQuality() * 100)}%</div>
           <div className="text-sm text-primary-600">Quality Score</div>
           <div className="text-xs text-light-500 mt-1">AI-evaluated quality</div>
         </div>
@@ -348,18 +353,15 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                 {/* Overall Score */}
                 <div className="text-center p-6 bg-primary-50/50 rounded-xl border border-primary-200">
                   <div className="text-4xl font-bold text-primary-700 mb-2">
-                    {Math.round((results.evaluation.overallQuality || 0) * 100)}%
+                    {Math.round(calculateOverallQuality() * 100)}%
                   </div>
                   <div className="text-primary-600 font-medium">Overall Quality Score</div>
-                  {results.evaluation.summary && (
-                    <p className="text-primary-600 text-sm mt-2">{results.evaluation.summary}</p>
-                  )}
                 </div>
 
                 {/* Detailed Metrics */}
-                {results.evaluation.metrics && (
+                {results.evaluation.overall_scores && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(results.evaluation.metrics).map(([key, value]) => (
+                    {Object.entries(results.evaluation.overall_scores).map(([key, value]) => (
                       <div key={key} className="bg-white/60 p-4 rounded-xl border border-light-200">
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-medium text-primary-700 capitalize">{key}</span>
