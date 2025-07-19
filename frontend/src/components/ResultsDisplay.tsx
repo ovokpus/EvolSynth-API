@@ -310,8 +310,8 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         <MessageSquare className="w-4 h-4" />
                         <span>Question</span>
                       </h4>
-                      <div className="bg-white/60 p-3 rounded-lg border border-light-200">
-                        <MarkdownRenderer content={qa.question} />
+                      <div className="bg-white/60 p-4 rounded-lg border border-light-200 shadow-sm">
+                        <MarkdownRenderer content={qa.question} contentType="question" enhanceFormatting={true} />
                       </div>
                     </div>
 
@@ -321,8 +321,8 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         <Lightbulb className="w-4 h-4" />
                         <span>Answer</span>
                       </h4>
-                      <div className="bg-white/60 p-3 rounded-lg border border-light-200">
-                        <MarkdownRenderer content={qa.answer} />
+                      <div className="bg-white/60 p-4 rounded-lg border border-light-200 shadow-sm">
+                        <MarkdownRenderer content={qa.answer} contentType="answer" enhanceFormatting={true} />
                       </div>
                     </div>
 
@@ -334,16 +334,19 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                           <span>Context</span>
                         </h4>
                         {Array.isArray(qa.context) ? (
-                          <ul className="space-y-1">
+                          <ul className="space-y-2">
                             {qa.context.map((ctx, i) => (
-                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-white/60 p-2 rounded border border-light-200 text-sm">
-                                <MarkdownRenderer content={`• ${ctx}`} />
+                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-white/60 p-3 rounded-lg border border-light-200 text-sm shadow-sm">
+                                <div className="flex items-start space-x-2">
+                                  <div className="w-1.5 h-1.5 bg-primary-400 rounded-full mt-2 flex-shrink-0"></div>
+                                  <MarkdownRenderer content={ctx} enhanceFormatting={true} />
+                                </div>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <div className="bg-white/60 p-3 rounded-lg border border-light-200 text-sm">
-                            <MarkdownRenderer content={qa.context} />
+                          <div className="bg-white/60 p-4 rounded-lg border border-light-200 text-sm shadow-sm">
+                            <MarkdownRenderer content={qa.context} enhanceFormatting={true} />
                           </div>
                         )}
                       </div>

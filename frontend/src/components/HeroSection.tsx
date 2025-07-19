@@ -70,8 +70,8 @@ export default function HeroSection() {
               <div className="text-primary-600 text-sm">Evolution Levels</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary-700 mb-2">~ 99%</div>
-              <div className="text-primary-600 text-sm">Quality Score</div>
+              <div className="text-3xl font-bold text-primary-700 mb-2">~ 70-85%</div>
+              <div className="text-primary-600 text-sm">Good Quality Score</div>
             </div>
           </div>
 

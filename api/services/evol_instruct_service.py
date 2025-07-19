@@ -323,32 +323,32 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
-                # Evolution prompts for different types - direct and clean
+                # Evolution prompts - ultra-clean, direct instructions
         evolution_prompts = {
             "simple_evolution": """
-            Create a more specific and detailed version of this question without any conversational phrases:
+            Make this question more specific and detailed. Return ONLY the improved question, nothing else.
 
-            Question: {question}
+            Original: {question}
 
-            Evolved Question:""",
+            Improved:""",
                         "multi_context_evolution": """
-            Rewrite this question to require synthesis across multiple concepts and sources:
+            Rewrite this to require comparing multiple concepts or sources. Return ONLY the new question, nothing else.
 
-            Question: {question}
+            Original: {question}
 
-            Multi-Context Question:""",
+            New:""",
                         "reasoning_evolution": """
-            Transform this question to require logical reasoning and multi-step analysis:
+            Make this require logical thinking and analysis steps. Return ONLY the question, nothing else.
 
-            Question: {question}
+            Original: {question}
 
-            Reasoning Question:""",
+            Result:""",
                         "complex_evolution": """
-            Create an advanced meta-cognitive question that combines reasoning, synthesis, and evaluation:
+            Create an advanced version requiring evaluation and synthesis. Return ONLY the question, nothing else.
 
-            Question: {question}
+            Original: {question}
 
-            Complex Meta-Cognitive Question:"""
+            Advanced:"""
                     }
         
         prompt_template = ChatPromptTemplate.from_template(evolution_prompts.get(evolution_type, evolution_prompts["simple_evolution"]))
@@ -437,24 +437,63 @@ class EvolInstructService:
     
     def _clean_boilerplate(self, text: str) -> str:
         """Remove common boilerplate phrases from generated content"""
-        # Common boilerplate phrases to remove
+        # Ultra-aggressive boilerplate removal patterns (most specific first)
         boilerplate_patterns = [
-            r"Certainly!?\s*Here'?s?\s+",
-            r"Generated answer for:\s*",
-            r"Here'?s?\s+a\s+(more\s+)?(specific|detailed|transformed)\s+version\s+",
-            r"^(Sure|Of course|Absolutely)!?\s*",
-            r"that requires multi-step reasoning and analysis:\s*",
+            # Ultra-specific patterns for exact user-reported issues
+            r"^a\s+transformed\s+version\s+of\s+the\s+question\s+that\s+requires\s+logical\s+reasoning\s+and\s+multi-step\s+analysis:\s*",
+            r"^here'?s?\s+a\s+more\s+specific\s+version\s+of\s+the\s+question:\s*",
+            r"^a\s+detailed\s+version\s+of\s+the\s+question\s+that\s+requires\s+synthesis:\s*",
+            
+            # General boilerplate patterns
+            r"^.*?\s+version\s+of\s+the\s+question\s+that\s+.*?:\s*",
+            r"^.*?\s+version\s+of\s+the\s+question:\s*",
+            r"^.*?\s+that\s+requires?\s+.*?:\s*",
+            
+            # Evolution type descriptions
+            r"^(Simple|Multi-Context|Reasoning|Complex)\s+(Evolution|Question):\s*",
+            r"^(Evolved|Improved|Advanced|New|Result):\s*",
+            r"^(Question|Answer):\s*",
+            
+            # Conversational starters
+            r"^(Certainly|Sure|Of course|Absolutely|Yes)!?\s*Here'?s?\s+",
+            r"^Here'?s?\s+",
             r"^I'll\s+",
             r"^Let me\s+",
+            
+            # Generated content markers
+            r"Generated\s+(answer|question|content)\s+for:\s*",
             r"^Based on.*?:\s*",
+            r"^(The\s+)?(following|above)\s+(question|answer|content)\s*",
+            
+            # Generic descriptions
+            r"^This\s+(is\s+)?(a\s+)?question\s+(that|which)\s+",
+            r"^(The\s+)?question\s+(is|becomes):\s*",
+            
+            # Cleanup trailing fragments
+            r":\s*$",
+            r"that\s*$",
+            r"which\s*$",
         ]
         
-        cleaned_text = text
+        cleaned_text = text.strip()
+        
+        # Apply all boilerplate removal patterns
         for pattern in boilerplate_patterns:
-            cleaned_text = re.sub(pattern, "", cleaned_text, flags=re.IGNORECASE)
+            cleaned_text = re.sub(pattern, "", cleaned_text, flags=re.IGNORECASE | re.MULTILINE)
         
         # Clean up extra whitespace and newlines
         cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        # Remove leading/trailing punctuation artifacts
+        cleaned_text = re.sub(r'^[:\-\s]+', '', cleaned_text)
+        cleaned_text = re.sub(r'[:\-\s]+$', '', cleaned_text)
+        
+        # Ensure question ends properly
+        if cleaned_text and not cleaned_text.endswith(('?', '.', '!', ':')):
+            if any(word in cleaned_text.lower() for word in ['what', 'how', 'why', 'when', 'where', 'which', 'who']):
+                cleaned_text += '?'
+            else:
+                cleaned_text += '.'
         
         return cleaned_text
     
