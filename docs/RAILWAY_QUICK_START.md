@@ -46,7 +46,7 @@ WORKERS=2
 3. **Timeout**: Railway first deploy takes 5-10 minutes
 
 ## 📚 Full Guide
-See `deploy/RAILWAY_DEPLOYMENT.md` for comprehensive deployment guide.
+See `docs/RAILWAY_DEPLOYMENT.md` for comprehensive deployment guide.
 
 ## 📁 Deploy Folder
 All Railway deployment files are now organized in the `deploy/` folder:
