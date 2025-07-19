@@ -22,6 +22,30 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
     }
   };
 
+  // Helper function to format context for export
+  const formatContextForExport = (context: (string | EnhancedContext)[] | string | undefined): string => {
+    if (!context) return '';
+    
+    if (typeof context === 'string') {
+      return context;
+    }
+    
+    if (Array.isArray(context)) {
+      return context.map(ctx => {
+        if (typeof ctx === 'string') {
+          return ctx;
+        } else if (ctx && typeof ctx === 'object' && 'text' in ctx && 'source' in ctx) {
+          // Enhanced context object
+          return `[${ctx.source}] ${ctx.text}`;
+        } else {
+          return String(ctx);
+        }
+      }).join('; ');
+    }
+    
+    return String(context);
+  };
+
   const exportData = (format: 'json' | 'csv' | 'txt') => {
     if (!results) return;
     
@@ -39,11 +63,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
       const csvRows = [headers.join(',')];
       
       displayQuestions.forEach(q => {
+        const formattedContext = formatContextForExport(q.context);
         const row = [
           `"${q.id || 'N/A'}"`,
           `"${q.question.replace(/"/g, '""')}"`,
           `"${q.answer.replace(/"/g, '""')}"`,
-          `"${Array.isArray(q.context) ? q.context.join('; ') : q.context || ''}"`,
+          `"${formattedContext.replace(/"/g, '""')}"`,
           `"${q.level || 'unknown'}"`,
           `"${q.metadata?.confidence || 0}"`,
           `"${q.metadata?.source || 'unknown'}"`
@@ -66,8 +91,9 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
         content += `${index + 1}. ${q.question}\n`;
         content += `Answer: ${q.answer}\n`;
         content += `Level: ${q.level}\n`;
-        if (q.context) {
-          content += `Context: ${Array.isArray(q.context) ? q.context.join(', ') : q.context}\n`;
+        const formattedContext = formatContextForExport(q.context);
+        if (formattedContext) {
+          content += `Context: ${formattedContext}\n`;
         }
         content += `\n`;
       });
