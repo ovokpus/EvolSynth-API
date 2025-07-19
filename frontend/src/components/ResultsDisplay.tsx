@@ -157,7 +157,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
           <h2 className="text-2xl font-bold text-primary-800">Generation Complete!</h2>
           <button
             onClick={shareResults}
-            className="ml-4 p-2 text-primary-600 hover:text-primary-500 transition-colors"
+            className="btn-clean ml-4 p-2 text-primary-600 hover:text-primary-500 transition-colors"
             title="Share results"
           >
             <Share className="w-5 h-5" />
@@ -199,10 +199,18 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
       <div className="border-b border-light-300">
         <nav className="flex space-x-8">
           {tabs.map((tab) => (
-            <button
+            <div
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 py-3 border-b-2 font-medium transition-colors ${
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setActiveTab(tab.id);
+                }
+              }}
+              className={`flex items-center space-x-2 py-3 border-b-2 font-medium transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-primary-500 text-primary-700'
                   : 'border-transparent text-primary-600 hover:text-primary-700 hover:border-light-400'
@@ -215,7 +223,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                   {tab.count}
                 </span>
               )}
-            </button>
+            </div>
           ))}
         </nav>
       </div>
@@ -515,13 +523,33 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
       </div>
 
       {/* Reset Button */}
-      <div className="flex justify-center pt-6">
+      <div className="flex justify-center pt-8 pb-8 mt-8">
         <button
           onClick={onReset}
-          className="flex items-center space-x-2 bg-light-200 hover:bg-light-300 text-primary-700 px-6 py-3 rounded-xl font-medium transition-all duration-200"
+          style={{ 
+            backgroundColor: '#7c3aed !important',
+            color: '#ffffff !important',
+            border: 'none !important',
+            minHeight: '60px',
+            fontSize: '18px',
+            padding: '16px 32px',
+            borderRadius: '12px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            transition: 'all 0.2s',
+            cursor: 'pointer'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#6d28d9 !important';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#7c3aed !important';
+          }}
         >
-          <RotateCcw className="w-4 h-4" />
-          <span>Generate New Dataset</span>
+          <RotateCcw className="w-5 h-5" style={{ color: '#ffffff !important' }} />
+          <span style={{ color: '#ffffff !important' }}>Generate New Dataset</span>
         </button>
       </div>
     </div>

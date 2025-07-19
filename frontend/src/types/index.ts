@@ -108,6 +108,10 @@ export interface FrontendGenerationSettings {
   evolutionLevels: number;
   questionsPerLevel: number;
   maxQuestions: number;
+  // Individual evolution type counts
+  simpleEvolutionCount: number;
+  multiContextEvolutionCount: number;
+  reasoningEvolutionCount: number;
   includeContextual: boolean;
   includeReasoning: boolean;
   evaluationEnabled: boolean;

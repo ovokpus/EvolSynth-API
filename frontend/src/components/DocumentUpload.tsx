@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useDropzone, FileRejection } from "react-dropzone";
 import { Upload, File, X, FileText, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react";
 import { UploadedDocument, DocumentUploadProps } from "@/types";
+import { extractFileContent } from "@/services/api";
 
 export default function DocumentUpload({ documents, setDocuments, onNext }: DocumentUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -66,13 +67,35 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
 
       try {
         let content = '';
+        let extractedMetadata = {};
         
-        if (file.type === 'application/pdf') {
-          // For PDF files, we'll need to handle them differently
-          // For now, we'll just store the file info and show a note
-          content = `[PDF File: ${file.name}] - Content extraction would be handled by the backend`;
-        } else {
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          // Extract PDF content using backend API
+          console.log(`🔍 Extracting content from PDF: ${file.name}`);
+          try {
+            const extractionResult = await extractFileContent(file);
+            
+            if (extractionResult.success && extractionResult.data) {
+              content = extractionResult.data.content;
+              extractedMetadata = extractionResult.data.metadata;
+              console.log(`✅ Successfully extracted ${extractionResult.data.metadata.content_length} characters from ${file.name}`);
+            } else {
+              throw new Error(extractionResult.error?.detail || 'PDF extraction failed');
+            }
+          } catch (error) {
+            console.error('❌ PDF extraction error:', error);
+            content = `[PDF File: ${file.name}] - Content extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          }
+        } else if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md')) {
+          // Handle text files locally
           content = await file.text();
+        } else {
+          // Try to read as text for other file types
+          try {
+            content = await file.text();
+          } catch (error) {
+            content = `[File: ${file.name}] - Could not extract text content`;
+          }
         }
 
         const document: UploadedDocument = {
@@ -85,6 +108,7 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
             type: file.type,
             lastModified: file.lastModified,
             uploadedAt: new Date().toISOString(),
+            ...extractedMetadata, // Include any metadata from backend extraction
           },
           size: file.size,
           type: file.type,
@@ -189,7 +213,19 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
           </ul>
           <button
             onClick={() => setErrors([])}
-            className="mt-2 text-red-600 hover:text-red-800 text-sm underline"
+            className="btn-clean mt-2 text-red-600 hover:text-red-800 text-sm underline"
+            style={{
+              backgroundColor: 'transparent !important',
+              color: '#ef4444 !important',
+              border: 'none !important',
+              textDecoration: 'underline'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.color = '#dc2626 !important';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.color = '#ef4444 !important';
+            }}
           >
             Dismiss
           </button>
@@ -276,13 +312,56 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
               {textInput.length}/50,000
             </div>
           </div>
-          <button
-            onClick={addTextDocument}
-            disabled={!textInput.trim() || documents.length >= 10}
-            className="bg-primary-700 hover:bg-primary-600 disabled:bg-light-300 disabled:text-primary-400 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:cursor-not-allowed"
+          <div
+            onClick={() => {
+              if (textInput.trim() && documents.length < 10) {
+                addTextDocument();
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if ((e.key === 'Enter' || e.key === ' ') && textInput.trim() && documents.length < 10) {
+                e.preventDefault();
+                addTextDocument();
+              }
+            }}
+            style={{
+              backgroundColor: (!textInput.trim() || documents.length >= 10) ? '#f1f5f9' : '#7c3aed',
+              color: (!textInput.trim() || documents.length >= 10) ? '#9ca3af' : '#ffffff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: '500',
+              fontSize: '14px',
+              cursor: (!textInput.trim() || documents.length >= 10) ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              outline: 'none',
+              userSelect: 'none',
+              display: 'inline-block'
+            }}
+            ref={(el) => {
+              if (el) {
+                el.style.setProperty('background-color', (!textInput.trim() || documents.length >= 10) ? '#f1f5f9' : '#7c3aed', 'important');
+                el.style.setProperty('color', (!textInput.trim() || documents.length >= 10) ? '#9ca3af' : '#ffffff', 'important');
+                el.style.setProperty('border', 'none', 'important');
+              }
+            }}
+            onMouseEnter={(e) => {
+              if (textInput.trim() && documents.length < 10) {
+                e.currentTarget.style.setProperty('background-color', '#6d28d9', 'important');
+                e.currentTarget.style.setProperty('color', '#ffffff', 'important');
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (textInput.trim() && documents.length < 10) {
+                e.currentTarget.style.setProperty('background-color', '#7c3aed', 'important');
+                e.currentTarget.style.setProperty('color', '#ffffff', 'important');
+              }
+            }}
           >
             Add Text Document
-          </button>
+          </div>
           {documents.length >= 10 && (
             <p className="text-xs text-red-600">Maximum of 10 documents reached</p>
           )}
@@ -298,7 +377,18 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
             </h3>
             <button
               onClick={clearAllDocuments}
-              className="text-sm text-primary-600 hover:text-red-600 transition-colors"
+              className="btn-clean text-sm text-primary-600 hover:text-red-600 transition-colors"
+              style={{
+                backgroundColor: 'transparent !important',
+                color: '#7c3aed !important',
+                border: 'none !important'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.color = '#ef4444 !important';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.color = '#7c3aed !important';
+              }}
             >
               Clear All
             </button>
@@ -332,9 +422,24 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
                   </div>
                   <button
                     onClick={() => removeDocument(doc.id)}
-                    className="p-2 text-primary-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="btn-clean p-2 text-primary-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: 'transparent !important',
+                      color: '#7c3aed !important',
+                      border: 'none !important',
+                      padding: '8px',
+                      borderRadius: '8px'
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = '#ef4444 !important';
+                      e.currentTarget.style.backgroundColor = '#fef2f2 !important';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = '#7c3aed !important';
+                      e.currentTarget.style.backgroundColor = 'transparent !important';
+                    }}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" style={{ color: 'inherit' }} />
                   </button>
                 </div>
               </div>
@@ -349,9 +454,20 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
           <button
             onClick={onNext}
             className="bg-primary-700 hover:bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-purple-glow flex items-center space-x-2"
+            style={{
+              backgroundColor: '#7c3aed !important',
+              color: '#ffffff !important',
+              border: 'none !important'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#6d28d9 !important';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#7c3aed !important';
+            }}
           >
-            <span className="text-white">Continue to Generation</span>
-            <CheckCircle className="w-5 h-5 text-white" />
+            <span style={{ color: '#ffffff !important' }}>Continue to Generation</span>
+            <CheckCircle className="w-5 h-5" style={{ color: '#ffffff !important' }} />
           </button>
         </div>
       )}

@@ -28,10 +28,12 @@ export default function Documentation({ onClose }: DocumentationProps) {
     { id: 'examples', title: 'Examples', icon: ArrowRight },
   ];
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  
   const generateExample = `import requests
 
 # Generate synthetic data
-response = requests.post("http://localhost:8000/generate", json={
+response = requests.post("${apiUrl}/generate", json={
     "documents": [
         {
             "content": "Machine learning algorithms enable computers to learn from data...",
@@ -52,7 +54,7 @@ result = response.json()
 print(f"Generated {len(result['evolved_questions'])} questions!")`;
 
   const evaluateExample = `# Evaluate quality
-eval_response = requests.post("http://localhost:8000/evaluate", json={
+eval_response = requests.post("${apiUrl}/evaluate", json={
     "evolved_questions": result["evolved_questions"],
     "question_answers": result["question_answers"],
     "question_contexts": result["question_contexts"],
@@ -87,14 +89,32 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    activeSection === section.id
-                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
-                      : 'text-primary-600 hover:bg-light-100'
-                  }`}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    fontWeight: '500',
+                    backgroundColor: activeSection === section.id ? '#f3e8ff !important' : 'transparent !important',
+                    color: activeSection === section.id ? '#7c3aed !important' : '#6b7280 !important',
+                    border: activeSection === section.id ? '1px solid #d8b4fe !important' : 'none !important'
+                  }}
+                  onMouseOver={(e) => {
+                    if (activeSection !== section.id) {
+                      e.currentTarget.style.backgroundColor = '#f9fafb !important';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (activeSection !== section.id) {
+                      e.currentTarget.style.backgroundColor = 'transparent !important';
+                    }
+                  }}
                 >
-                  <section.icon className="w-4 h-4" />
-                  <span className="font-medium">{section.title}</span>
+                  <section.icon className="w-4 h-4" style={{ color: 'inherit' }} />
+                  <span style={{ color: 'inherit' }}>{section.title}</span>
                 </button>
               ))}
             </nav>
@@ -157,7 +177,7 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                     <div>
                       <h4 className="font-semibold text-blue-800 mb-1">Prerequisites</h4>
                       <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• Backend running on <code className="bg-blue-100 px-1 rounded">http://localhost:8000</code></li>
+                        <li>• Backend running on <code className="bg-blue-100 px-1 rounded">{apiUrl}</code></li>
                         <li>• OpenAI API key configured</li>
                         <li>• LangSmith API key for monitoring (optional)</li>
                       </ul>
@@ -173,9 +193,9 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                     </div>
                     <p className="text-primary-600 text-sm mb-2">Verify the API is running and all services are connected:</p>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
-                      <code className="text-green-400 text-sm">curl http://localhost:8000/health</code>
+                      <code className="text-green-400 text-sm">curl {apiUrl}/health</code>
                       <button
-                        onClick={() => copyToClipboard('curl http://localhost:8000/health', 'health')}
+                        onClick={() => copyToClipboard(`curl ${apiUrl}/health`, 'health')}
                         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
                       >
                         {copiedCode === 'health' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -193,9 +213,9 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                     </div>
                     <p className="text-primary-600 text-sm mb-2">Fetch sample documents to test the API:</p>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
-                      <code className="text-green-400 text-sm">curl http://localhost:8000/documents/sample</code>
+                      <code className="text-green-400 text-sm">curl {apiUrl}/documents/sample</code>
                       <button
-                        onClick={() => copyToClipboard('curl http://localhost:8000/documents/sample', 'sample')}
+                        onClick={() => copyToClipboard(`curl ${apiUrl}/documents/sample`, 'sample')}
                         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
                       >
                         {copiedCode === 'sample' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -330,7 +350,7 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                   <div>
                     <h4 className="font-semibold text-primary-700 mb-3">JavaScript/Node.js Example</h4>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
-                      <pre className="text-blue-400 text-sm overflow-x-auto">{`const response = await fetch('http://localhost:8000/generate', {
+                      <pre className="text-blue-400 text-sm overflow-x-auto">{`const response = await fetch('${apiUrl}/generate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -352,7 +372,7 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
 const result = await response.json();
 console.log(\`Generated \${result.evolved_questions.length} questions!\`);`}</pre>
                       <button
-                        onClick={() => copyToClipboard(`const response = await fetch('http://localhost:8000/generate', {
+                        onClick={() => copyToClipboard(`const response = await fetch('${apiUrl}/generate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -383,7 +403,7 @@ console.log(\`Generated \${result.evolved_questions.length} questions!\`);`, 'ja
                   <div>
                     <h4 className="font-semibold text-primary-700 mb-3">cURL Example</h4>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
-                      <pre className="text-yellow-400 text-sm overflow-x-auto">{`curl -X POST "http://localhost:8000/generate" \\
+                      <pre className="text-yellow-400 text-sm overflow-x-auto">{`curl -X POST "${apiUrl}/generate" \\
   -H "Content-Type: application/json" \\
   -d '{
     "documents": [{
@@ -400,7 +420,7 @@ console.log(\`Generated \${result.evolved_questions.length} questions!\`);`, 'ja
     "max_iterations": 1
   }'`}</pre>
                       <button
-                        onClick={() => copyToClipboard(`curl -X POST "http://localhost:8000/generate" \\
+                        onClick={() => copyToClipboard(`curl -X POST "${apiUrl}/generate" \\
   -H "Content-Type: application/json" \\
   -d '{
     "documents": [{

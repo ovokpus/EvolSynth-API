@@ -18,11 +18,35 @@ import {
   ExecutionMode,
 } from '@/types';
 
+import { API_CONFIG } from '@/lib/constants';
+
+// =============================================================================
+// LOGGING UTILITY
+// =============================================================================
+
+const logger = {
+  info: (message: string, data?: unknown) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`ℹ️ ${message}`, data ? data : '');
+    }
+  },
+  success: (message: string, data?: unknown) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`✅ ${message}`, data ? data : '');
+    }
+  },
+  warn: (message: string, data?: unknown) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`⚠️ ${message}`, data ? data : '');
+    }
+  },
+};
+
 // =============================================================================
 // API CONFIGURATION
 // =============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 class APIClient {
   private baseURL: string;
@@ -93,9 +117,9 @@ class APIClient {
     return {
       execution_mode: settings.concurrentProcessing ? 'concurrent' : 'sequential' as ExecutionMode,
       max_base_questions_per_doc: Math.ceil(settings.questionsPerLevel / settings.evolutionLevels),
-      simple_evolution_count: settings.evolutionLevels >= 1 ? settings.questionsPerLevel : 0,
-      multi_context_evolution_count: settings.evolutionLevels >= 2 && settings.includeContextual ? settings.questionsPerLevel : 0,
-      reasoning_evolution_count: settings.evolutionLevels >= 3 && settings.includeReasoning ? settings.questionsPerLevel : 0,
+      simple_evolution_count: settings.simpleEvolutionCount,
+      multi_context_evolution_count: settings.multiContextEvolutionCount,
+      reasoning_evolution_count: settings.reasoningEvolutionCount,
       temperature: settings.temperature,
       max_tokens: 500, // Default value
     };
@@ -168,9 +192,74 @@ class APIClient {
     return this.request<HealthResponse>('/health');
   }
 
+  async checkGenerationStatus(generationId: string): Promise<APIResponse<{
+    status: string;
+    progress: number;
+    current_stage: string;
+    start_time: string;
+    error?: string;
+  }>> {
+    return this.request<{
+      status: string;
+      progress: number;
+      current_stage: string;
+      start_time: string;
+      error?: string;
+    }>(`/generate/status/${generationId}`);
+  }
+
+  async extractFileContent(file: File): Promise<APIResponse<{
+    success: boolean;
+    filename: string;
+    content: string;
+    metadata: {
+      file_size: number;
+      file_type: string;
+      pages_or_chunks: number;
+      content_length: number;
+    };
+  }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // For file uploads, we need to handle the request differently
+    const url = `${this.baseURL}/upload/extract-content`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type - let browser handle multipart/form-data
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        return {
+          success: false,
+          error: { detail: errorData.detail || `HTTP ${response.status}: ${response.statusText}` },
+          data: undefined,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        data,
+        error: undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: { detail: error instanceof Error ? error.message : 'Network error' },
+        data: undefined,
+      };
+    }
+  }
+
   async generateSyntheticData(
     documents: UploadedDocument[],
-    settings: FrontendGenerationSettings
+    settings: FrontendGenerationSettings,
+    onProgress?: (progress: number, stage: string) => void
   ): Promise<APIResponse<GenerationResults>> {
     try {
       // Convert frontend data to backend format
@@ -189,6 +278,32 @@ class APIClient {
         body: JSON.stringify(request),
       });
 
+      // If onProgress callback is provided and we have a generation_id, poll for progress
+      if (onProgress && generationResponse.success && generationResponse.data?.generation_id) {
+        const generationId = generationResponse.data.generation_id;
+        
+        // Start polling for progress (optional feature for future use)
+        const pollProgress = async () => {
+          try {
+            const statusResponse = await this.checkGenerationStatus(generationId);
+            if (statusResponse.success && statusResponse.data) {
+              const { progress, current_stage, status } = statusResponse.data;
+              onProgress(Math.round(progress * 100), current_stage);
+              
+              // Continue polling if not completed
+              if (status === 'running' && progress < 1.0) {
+                setTimeout(pollProgress, 1000); // Poll every second
+              }
+            }
+          } catch (error) {
+            logger.warn('Progress polling failed', error);
+          }
+        };
+        
+        // Note: This is disabled for now since the current backend returns immediately
+        // pollProgress();
+      }
+
       if (!generationResponse.success || !generationResponse.data) {
         return generationResponse as APIResponse<GenerationResults>;
       }
@@ -197,7 +312,7 @@ class APIClient {
       let evaluationResponse: EvaluationResponse | undefined;
       if (settings.evaluationEnabled && generationResponse.data.evolved_questions.length > 0) {
         try {
-          console.log('🔍 Calling evaluation endpoint...');
+          logger.info('Calling evaluation endpoint...');
           const evalRequest: EvaluationRequest = {
             evolved_questions: generationResponse.data.evolved_questions,
             question_answers: generationResponse.data.question_answers,
@@ -212,16 +327,16 @@ class APIClient {
 
           if (evalResult.success && evalResult.data) {
             evaluationResponse = evalResult.data;
-            console.log('✅ Evaluation completed:', evaluationResponse.overall_scores);
+            logger.success('Evaluation completed', evaluationResponse.overall_scores);
           } else {
-            console.warn('⚠️ Evaluation failed:', evalResult.error);
+                          logger.warn('Evaluation failed', evalResult.error);
           }
         } catch (error) {
           console.error('❌ Evaluation error:', error);
           // Continue without evaluation rather than failing the entire request
         }
       } else {
-        console.log(`⚠️ Evaluation skipped: enabled=${settings.evaluationEnabled}, questions=${generationResponse.data.evolved_questions.length}`);
+        logger.warn(`Evaluation skipped: enabled=${settings.evaluationEnabled}, questions=${generationResponse.data.evolved_questions.length}`);
       }
 
       // Convert to frontend format
@@ -334,4 +449,8 @@ export function getDisplayQuestions(results: GenerationResults): DisplayQuestion
 
 export async function isBackendConnected(): Promise<boolean> {
   return apiClient.checkBackendConnection();
+}
+
+export async function extractFileContent(file: File) {
+  return apiClient.extractFileContent(file);
 } 

@@ -13,6 +13,9 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     evolutionLevels: 3,
     questionsPerLevel: 5,
     maxQuestions: 50,
+    simpleEvolutionCount: 3,
+    multiContextEvolutionCount: 3,
+    reasoningEvolutionCount: 2,
     includeContextual: true,
     includeReasoning: true,
     evaluationEnabled: true,
@@ -23,7 +26,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
 
   // Calculate estimated metrics
   const estimatedQuestions = Math.min(
-    settings.evolutionLevels * settings.questionsPerLevel,
+    settings.simpleEvolutionCount + settings.multiContextEvolutionCount + settings.reasoningEvolutionCount,
     settings.maxQuestions
   );
   
@@ -51,6 +54,22 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
       errors.push("Temperature must be between 0.1 and 1.0");
     }
     
+    if (settings.simpleEvolutionCount < 0 || settings.simpleEvolutionCount > 20) {
+      errors.push("Simple evolution count must be between 0 and 20");
+    }
+    
+    if (settings.multiContextEvolutionCount < 0 || settings.multiContextEvolutionCount > 20) {
+      errors.push("Multi-context evolution count must be between 0 and 20");
+    }
+    
+    if (settings.reasoningEvolutionCount < 0 || settings.reasoningEvolutionCount > 20) {
+      errors.push("Reasoning evolution count must be between 0 and 20");
+    }
+    
+    if (estimatedQuestions === 0) {
+      errors.push("At least one evolution type must have a count greater than 0");
+    }
+    
     if (estimatedQuestions > settings.maxQuestions) {
       errors.push(`Estimated questions (${estimatedQuestions}) exceeds maximum limit (${settings.maxQuestions})`);
     }
@@ -62,14 +81,34 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     setValidationErrors(errors);
   }, [settings, estimatedQuestions, totalCharacters]);
 
-  // Real generation process using FastAPI backend
+  // Real generation process using FastAPI backend with realistic progress tracking
   const performRealGeneration = async () => {
     try {
       setCurrentStep("Connecting to backend...");
       setProgress(5);
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Call the real API
+      setCurrentStep("Processing documents...");
+      setProgress(15);
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      setCurrentStep("Initializing generation models...");
+      setProgress(25);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setCurrentStep("Generating questions...");
+      setProgress(40);
+      
+      // Start the actual API call
       const results = await generateSyntheticData(documents, settings);
+      
+      setCurrentStep("Evaluating quality...");
+      setProgress(75);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      setCurrentStep("Finalizing results...");
+      setProgress(90);
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       setCurrentStep("Generation complete!");
       setProgress(100);
@@ -103,6 +142,9 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
       evolutionLevels: 3,
       questionsPerLevel: 5,
       maxQuestions: 50,
+      simpleEvolutionCount: 3,
+      multiContextEvolutionCount: 3,
+      reasoningEvolutionCount: 2,
       includeContextual: true,
       includeReasoning: true,
       evaluationEnabled: true,
@@ -202,7 +244,63 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
                 />
                 <p className="text-xs text-primary-600 mt-1">Maximum questions to generate across all levels</p>
               </div>
+            </div>
 
+            {/* Evolution Type Counts */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-primary-700 mb-3">Evolution Type Distribution</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Simple Evolution */}
+                <div>
+                  <label className="block text-sm font-medium text-primary-700 mb-2">
+                    Simple Evolution
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={settings.simpleEvolutionCount}
+                    onChange={(e) => setSettings({...settings, simpleEvolutionCount: Number(e.target.value)})}
+                    className="w-full bg-light-100/50 border border-light-300 rounded-lg px-3 py-2 text-primary-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                  />
+                  <p className="text-xs text-primary-600 mt-1">Clear, direct questions</p>
+                </div>
+
+                {/* Multi-Context Evolution */}
+                <div>
+                  <label className="block text-sm font-medium text-primary-700 mb-2">
+                    Multi-Context
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={settings.multiContextEvolutionCount}
+                    onChange={(e) => setSettings({...settings, multiContextEvolutionCount: Number(e.target.value)})}
+                    className="w-full bg-light-100/50 border border-light-300 rounded-lg px-3 py-2 text-primary-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                  />
+                  <p className="text-xs text-primary-600 mt-1">Cross-document analysis</p>
+                </div>
+
+                {/* Reasoning Evolution */}
+                <div>
+                  <label className="block text-sm font-medium text-primary-700 mb-2">
+                    Reasoning
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={settings.reasoningEvolutionCount}
+                    onChange={(e) => setSettings({...settings, reasoningEvolutionCount: Number(e.target.value)})}
+                    className="w-full bg-light-100/50 border border-light-300 rounded-lg px-3 py-2 text-primary-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                  />
+                  <p className="text-xs text-primary-600 mt-1">Multi-step thinking</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Temperature */}
               <div>
                 <label className="block text-sm font-medium text-primary-700 mb-2">

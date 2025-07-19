@@ -87,11 +87,12 @@ export default function HeroSection() {
             </button>
             
             <button 
+              id="docs"
               onClick={openDocumentation}
               className="group bg-white/80 hover:bg-white/90 backdrop-blur-sm border border-light-300 hover:border-primary-300 text-primary-700 font-medium px-8 py-4 rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-light-lg hover:scale-105"
             >
               <Brain className="w-5 h-5 text-primary-700" />
-              <span className="text-primary-700">View Documentation</span>
+              <span className="text-primary-700">View API Documentation</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300 text-primary-700" />
             </button>
           </div>

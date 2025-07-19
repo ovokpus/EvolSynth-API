@@ -9,9 +9,11 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+import tempfile
+import os
 
 # Performance imports
 try:
@@ -358,6 +360,76 @@ async def get_generation_status(generation_id: str):
         raise HTTPException(status_code=404, detail="Generation ID not found")
     
     return generation_status[generation_id]
+
+
+@app.post("/upload/extract-content")
+async def extract_file_content(
+    file: UploadFile = File(...),
+    doc_service: DocumentService = Depends(get_document_service)
+):
+    """
+    Extract content from uploaded files (PDF, TXT, MD)
+    Returns the extracted text content for use in document processing
+    """
+    try:
+        # Validate file type
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No filename provided")
+        
+        # Check file extension
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        if file_extension not in {'.pdf', '.txt', '.md'}:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unsupported file type: {file_extension}. Supported types: .pdf, .txt, .md"
+            )
+        
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
+            # Write uploaded content to temp file
+            content = await file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Extract content using document service
+            if file_extension == '.pdf':
+                documents = doc_service._load_pdf(temp_file_path)
+            elif file_extension in {'.txt', '.md'}:
+                documents = doc_service._load_text_file(temp_file_path)
+            else:
+                raise HTTPException(status_code=400, detail="Unsupported file type")
+            
+            # Combine all document content
+            extracted_content = '\n\n'.join([doc.page_content for doc in documents])
+            
+            # Get basic metadata
+            file_stats = os.stat(temp_file_path)
+            
+            return {
+                "success": True,
+                "filename": file.filename,
+                "content": extracted_content,
+                "metadata": {
+                    "file_size": file_stats.st_size,
+                    "file_type": file_extension,
+                    "pages_or_chunks": len(documents),
+                    "content_length": len(extracted_content)
+                }
+            }
+            
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+                
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Content extraction failed: {str(e)}"
+        )
 
 
 # Keep the existing endpoints from the original main.py

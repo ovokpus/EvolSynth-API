@@ -30,6 +30,15 @@ button {
   border: none !important;
 }
 
+/* Override for clean buttons that should not have purple background */
+button.btn-clean, 
+button[class*="text-primary"], 
+button[class*="hover:text-primary"] {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+}
+
 /* Force white text in buttons and their children */
 button, button *, button span, button svg {
   color: #ffffff !important;
