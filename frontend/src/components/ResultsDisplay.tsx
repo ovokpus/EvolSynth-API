@@ -12,6 +12,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
 
+  // DEBUG: Log raw results from backend
+  console.log("🔍 DEBUG ResultsDisplay - Raw results:", results);
+  if (results) {
+    console.log("🔍 DEBUG ResultsDisplay - question_contexts:", results.question_contexts);
+  }
+
   const copyToClipboard = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -26,18 +32,26 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   const formatContextForExport = (context: (string | EnhancedContext)[] | string | undefined): string => {
     if (!context) return '';
     
+    // DEBUG: Log what we're receiving
+    console.log("🔍 DEBUG formatContextForExport - Input:", context);
+    console.log("🔍 DEBUG formatContextForExport - Type:", typeof context);
+    console.log("🔍 DEBUG formatContextForExport - Array?:", Array.isArray(context));
+    
     if (typeof context === 'string') {
       return context;
     }
     
     if (Array.isArray(context)) {
       return context.map(ctx => {
+        console.log("🔍 DEBUG formatContextForExport - Ctx item:", ctx, "Type:", typeof ctx);
         if (typeof ctx === 'string') {
           return ctx;
         } else if (ctx && typeof ctx === 'object' && 'text' in ctx && 'source' in ctx) {
           // Enhanced context object
+          console.log("🔍 DEBUG formatContextForExport - Enhanced context found!");
           return `[${ctx.source}] ${ctx.text}`;
         } else {
+          console.log("🔍 DEBUG formatContextForExport - Unknown object, stringifying");
           return String(ctx);
         }
       }).join('; ');
@@ -141,7 +155,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   // Convert backend data to display format
   const displayQuestions: DisplayQuestion[] = results ? getDisplayQuestions(results) : [];
   
-
+  // DEBUG: Log displayQuestions to see what we're getting
+  if (displayQuestions.length > 0) {
+    console.log("🔍 DEBUG displayQuestions:", displayQuestions);
+    console.log("🔍 DEBUG First question context:", displayQuestions[0].context);
+    console.log("🔍 DEBUG Context type:", typeof displayQuestions[0].context);
+  }
 
   const tabs = [
     { id: 'questions' as const, label: 'Questions & Answers', icon: MessageSquare, count: displayQuestions.length },
