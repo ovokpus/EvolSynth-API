@@ -141,6 +141,8 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   // Convert backend data to display format
   const displayQuestions: DisplayQuestion[] = results ? getDisplayQuestions(results) : [];
   
+
+
   const tabs = [
     { id: 'questions' as const, label: 'Questions & Answers', icon: MessageSquare, count: displayQuestions.length },
     { id: 'evaluation' as const, label: 'Quality Metrics', icon: BarChart3 },
@@ -363,23 +365,50 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-2">
                             {qa.context.map((ctx, i) => {
-                              // Handle both string and enhanced context formats
-                              const isEnhancedContext = typeof ctx === 'object' && ctx !== null && 'text' in ctx;
-                              const contextText = isEnhancedContext ? (ctx as EnhancedContext).text : (ctx as string);
-                              const contextSource = isEnhancedContext ? (ctx as EnhancedContext).source : null;
+                              // Handle multiple context formats with robust checking
+                              let contextText = '';
+                              let contextSource = '';
+                              
+                              if (typeof ctx === 'string') {
+                                // Simple string context
+                                contextText = ctx;
+                                contextSource = `Context ${i + 1}`;
+                                                             } else if (ctx && typeof ctx === 'object') {
+                                 // Enhanced context object - check for all possible properties
+                                 const ctxObj = ctx as EnhancedContext | Record<string, unknown>;
+                                 if ('text' in ctxObj && 'source' in ctxObj) {
+                                   // Standard enhanced context
+                                   contextText = String(ctxObj.text || ctxObj.source || 'No content available');
+                                   contextSource = String(ctxObj.source || `Document ${i + 1}`);
+                                 } else if ('text' in ctxObj) {
+                                   // Has text but no source
+                                   contextText = String(ctxObj.text);
+                                   contextSource = `Context ${i + 1}`;
+                                 } else if ('source' in ctxObj) {
+                                   // Has source but no text
+                                   contextText = String(ctxObj.source);
+                                   contextSource = String(ctxObj.source);
+                                 } else {
+                                   // Object with unknown structure - convert to string
+                                   contextText = JSON.stringify(ctx, null, 2);
+                                   contextSource = `Context ${i + 1}`;
+                                 }
+                              } else {
+                                // Fallback for any other type
+                                contextText = String(ctx || 'No context available');
+                                contextSource = `Context ${i + 1}`;
+                              }
                               
                               return (
                                 <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
                                   <div className="flex items-start space-x-2">
                                     <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
                                     <div className="flex-1">
-                                      {contextSource && (
-                                        <div className="flex items-center space-x-1 mb-1">
-                                          <span className="text-xs text-primary-500 bg-primary-200/50 px-2 py-0.5 rounded-full font-medium">
-                                            📄 {contextSource}
-                                          </span>
-                                        </div>
-                                      )}
+                                      <div className="flex items-center space-x-1 mb-1">
+                                        <span className="text-xs text-primary-500 bg-primary-200/50 px-2 py-0.5 rounded-full font-medium">
+                                          📄 {contextSource}
+                                        </span>
+                                      </div>
                                       <div className="text-xs text-primary-600 leading-relaxed">
                                         <MarkdownRenderer 
                                           content={contextText} 
