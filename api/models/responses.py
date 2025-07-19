@@ -125,6 +125,8 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error type or code")
     message: str = Field(..., description="Human-readable error message")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Additional error details")
+    category: Optional[str] = Field(default=None, description="Error category for classification")
+    status_code: Optional[int] = Field(default=None, description="HTTP status code")
     timestamp: datetime = Field(default_factory=datetime.now, description="Error timestamp")
     
     class Config:
