@@ -267,15 +267,48 @@ class EvolInstructService:
     
     def _process_documents_sync(self, doc_batch: List[Document], operation: str) -> List[Dict[str, Any]]:
         """Synchronous document processing (runs in thread pool)"""
-        # Implementation for base question generation
-        # This runs the actual LLM calls in a thread
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
+        # Base question generation prompt
+        base_prompt = ChatPromptTemplate.from_template(
+            "Based on the following document, generate 2-3 clear, specific questions that test understanding of the key concepts:\n\n"
+            "Document: {document}\n\n"
+            "Generate questions that are:\n"
+            "- Specific and detailed\n"
+            "- Focused on important concepts\n"
+            "- Clear and unambiguous\n\n"
+            "Questions:"
+        )
+        
         for doc in doc_batch:
-            # Generate base questions logic here
-            result = {"generated": True, "doc_id": id(doc)}
-            results.append(result)
+            try:
+                # Generate questions using LLM
+                response = llm.invoke(base_prompt.format(document=doc.page_content))
+                questions_text = response.content
+                
+                # Parse questions (simple split on question marks)
+                questions = [q.strip() + "?" for q in questions_text.split("?") if q.strip()]
+                
+                for i, question in enumerate(questions[:3]):  # Limit to 3 questions
+                    result = {
+                        "id": f"base_{id(doc)}_{i}",
+                        "question": question,
+                        "type": "base_question",
+                        "document_id": str(id(doc))
+                    }
+                    results.append(result)
+                    
+            except Exception as e:
+                print(f"Error generating base questions: {e}")
+                # Fallback question
+                result = {
+                    "id": f"base_{id(doc)}_fallback",
+                    "question": "What are the main concepts discussed in this document?",
+                    "type": "base_question",
+                    "document_id": str(id(doc))
+                }
+                results.append(result)
         
         return results
     
@@ -284,15 +317,43 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
+        # Evolution prompts for different types
+        evolution_prompts = {
+            "simple_evolution": "Make this question more specific and detailed: {question}",
+            "multi_context_evolution": "Rewrite this question to require understanding across multiple concepts: {question}",
+            "reasoning_evolution": "Transform this question to require multi-step reasoning and analysis: {question}"
+        }
+        
+        prompt_template = ChatPromptTemplate.from_template(evolution_prompts.get(evolution_type, evolution_prompts["simple_evolution"]))
+        
         for question in question_batch:
-            # Evolution logic here
-            evolved_q = {
-                "id": f"evolved_{id(question)}",
-                "question": f"Evolved: {question.get('question', '')}",
-                "evolution_type": evolution_type,
-                "complexity_level": 2
-            }
-            results.append(evolved_q)
+            try:
+                original_question = question.get('question', '')
+                if not original_question:
+                    continue
+                    
+                # Evolve question using LLM
+                response = llm.invoke(prompt_template.format(question=original_question))
+                evolved_question = response.content.strip()
+                
+                evolved_q = {
+                    "id": f"evolved_{id(question)}",
+                    "question": evolved_question,
+                    "evolution_type": evolution_type,
+                    "complexity_level": 2 if evolution_type == "simple_evolution" else 3 if evolution_type == "multi_context_evolution" else 4
+                }
+                results.append(evolved_q)
+                
+            except Exception as e:
+                print(f"Error evolving question: {e}")
+                # Fallback to original question
+                evolved_q = {
+                    "id": f"evolved_{id(question)}",
+                    "question": question.get('question', 'What is the main topic of this document?'),
+                    "evolution_type": evolution_type,
+                    "complexity_level": 2
+                }
+                results.append(evolved_q)
         
         return results
     

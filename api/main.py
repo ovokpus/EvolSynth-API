@@ -257,9 +257,26 @@ async def generate_synthetic_data_optimized(
             
             if cached_result:
                 print("🎯 Cache hit! Returning cached result")
-                cached_result["generation_id"] = generation_id
-                cached_result["timestamp"] = datetime.now()
-                return GenerationResponse(**cached_result)
+                try:
+                    # Handle performance_metrics conversion if it's a dict
+                    perf_metrics = cached_result["performance_metrics"]
+                    if isinstance(perf_metrics, dict):
+                        perf_metrics = PerformanceMetrics(**perf_metrics)
+                    
+                    # Create proper response from cached result
+                    response = GenerationResponse(
+                        success=True,
+                        evolved_questions=cached_result["evolved_questions"],
+                        question_answers=cached_result["question_answers"],
+                        question_contexts=cached_result["question_contexts"],
+                        performance_metrics=perf_metrics,
+                        generation_id=generation_id,
+                        timestamp=datetime.now()
+                    )
+                    return response
+                except (KeyError, TypeError) as e:
+                    print(f"⚠️  Cache data corrupted, regenerating: {e}")
+                    # Continue with normal generation if cache data is invalid
         
         # Initialize generation status
         generation_status[generation_id] = {
