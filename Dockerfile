@@ -1,7 +1,7 @@
 # Railway-optimized Dockerfile for EvolSynth API
 # Simplified single-stage build optimized for Railway's build environment
 
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Set environment variables optimized for Railway
 ENV PYTHONUNBUFFERED=1 \

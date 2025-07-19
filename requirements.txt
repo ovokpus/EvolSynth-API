@@ -26,6 +26,18 @@ pypdf>=5.8.0
 # Environment Configuration
 python-dotenv>=1.1.1
 
+# Redis Cache
+redis==6.2.0
+
+# Background Tasks
+celery>=5.5.3
+
+# HTTP Client
+aiohttp>=3.12.14
+
+# Security/Sanitization
+bleach==6.2.0
+
 # Optional: Enhanced Dependencies (can be removed if not needed)
 # -------------------------------------------------------------
 # For PDF processing improvements
