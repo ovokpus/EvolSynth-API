@@ -436,6 +436,126 @@ Built with ❤️ for the AI community. Based on the Evol-Instruct methodology f
 
 ---
 
+## 📊 LangSmith Integration & Monitoring
+
+EvolSynth API includes **comprehensive LangSmith integration** for tracking, monitoring, and debugging all LLM-based evaluation processes.
+
+### 🔍 Architecture Flow
+
+```mermaid
+graph TD
+    A[Frontend Request] --> B[Generate Questions]
+    B --> C[Evaluation Service]
+    C --> D[LLM-as-Judge Calls]
+    D --> E[LangSmith Traces]
+    E --> F[Quality Scores]
+    F --> G[Frontend Display]
+    
+    style E fill:#00ff00,stroke:#333,stroke-width:2px
+    style C fill:#ff9900,stroke:#333,stroke-width:2px
+```
+
+### 🛠️ Implementation Details
+
+**Configuration Location: `api/config.py`**
+
+```python
+class Settings(BaseSettings):
+    # LangSmith Configuration
+    langchain_api_key: Optional[str] = Field(default=None, alias="LANGCHAIN_API_KEY")
+    langchain_tracing_v2: bool = Field(default=True, alias="LANGCHAIN_TRACING_V2") 
+    langchain_project: str = Field(default="EvolSynth-API", alias="LANGCHAIN_PROJECT")
+
+def setup_environment():
+    """Setup environment variables for LangChain and OpenAI"""
+    if settings.langchain_api_key:
+        os.environ["LANGCHAIN_API_KEY"] = settings.langchain_api_key
+    
+    os.environ["LANGCHAIN_TRACING_V2"] = str(settings.langchain_tracing_v2).lower()
+    os.environ["LANGCHAIN_PROJECT"] = settings.langchain_project
+```
+
+**Evaluation Service Integration: `api/services/evaluation_service.py`**
+
+```python
+class EvaluationService:
+    def __init__(self):
+        self.evaluation_llm = ChatOpenAI(
+            model=settings.evaluation_model,  # gpt-4o-mini
+            temperature=0.1  # Low temperature for consistent evaluation
+        )
+        # ☝️ This ChatOpenAI instance automatically sends traces to LangSmith
+```
+
+### 📈 What LangSmith Tracks
+
+**🎯 LLM-as-Judge Evaluation Calls:**
+
+1. **Question Quality Assessment**
+   - Prompt: `"You are an expert evaluator assessing the quality of evolved questions..."`
+   - Evaluates: Clarity, specificity, educational value, grammar
+   - Output: `GOOD` or `POOR` classification
+
+2. **Answer Accuracy Assessment**
+   - Prompt: `"You are an expert evaluator assessing answer quality..."`
+   - Evaluates: Accuracy, completeness, structure
+   - Output: `ACCURATE` or `INACCURATE` classification
+
+3. **Evolution Effectiveness Assessment**
+   - Prompt: `"You are an expert in cognitive assessment and question design..."`
+   - Evaluates: Cognitive complexity achievement for evolution type
+   - Output: `EFFECTIVE` or `INEFFECTIVE` classification
+
+### 🔍 Monitoring Dashboard
+
+**Access Your LangSmith Dashboard:**
+- URL: `https://smith.langchain.com/`
+- Project: `EvolSynth-API`
+- Traces: All evaluation LLM calls with full conversation history
+
+**Tracked Metrics:**
+- 📊 **Evaluation Performance**: Success rates for each metric type
+- ⏱️ **Latency Tracking**: Response times for evaluation calls
+- 💰 **Cost Monitoring**: Token usage and costs for evaluation LLM calls
+- 🔍 **Debugging**: Full prompt-response traces for troubleshooting
+- 📈 **Usage Patterns**: Frequency of different evaluation types
+
+### 🎚️ Environment Configuration
+
+Add to your `.env` file:
+
+```bash
+# LangSmith Configuration
+LANGCHAIN_API_KEY=your_langsmith_api_key_here
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_PROJECT=EvolSynth-API
+```
+
+### 🔧 Health Check Integration
+
+The `/health` endpoint includes LangSmith status:
+
+```json
+{
+  "status": "healthy",
+  "dependencies": {
+    "openai": "connected",
+    "langsmith": "connected",
+    "evaluation_service": "running"
+  }
+}
+```
+
+### 💡 Benefits
+
+- **🎯 Quality Insights**: Monitor how well your evaluation prompts perform
+- **🔍 Debugging**: Trace problematic evaluations to improve prompt engineering
+- **📊 Analytics**: Track evaluation patterns and model performance over time
+- **💰 Cost Control**: Monitor evaluation costs and optimize token usage
+- **🚀 Performance**: Identify bottlenecks in the evaluation pipeline
+
+---
+
 **Ready to evolve your data?** 🚀 
 
 Start generating sophisticated synthetic evaluation datasets that push the boundaries of AI system assessment! 
