@@ -730,66 +730,71 @@ class EvolInstructService:
 
             context = {
                 "question_id": question["id"],
-                # Return enhanced contexts with source information
-                "contexts": question_specific_contexts[:2]  # Top 2 relevant contexts with sources
+                # Return only the SINGLE most relevant context
+                "contexts": question_specific_contexts[:1]  # Only 1 context now
             }
             results.append(context)
 
         return results
 
     def _extract_contexts_fast(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
-        """ULTRA-FAST context extraction with AI summarization and proper document titles"""
+        """ULTRA-FAST context extraction with AI summarization and proper document titles - SINGLE BEST CONTEXT"""
         results = []
         
         for question in questions:
             question_text = question.get('question', '')
-            question_specific_contexts = []
             
-            # Fast keyword-based context extraction with AI summarization
+            # Find the MOST relevant document instead of all relevant ones
+            best_doc = None
+            best_score = 0
+            best_doc_index = 0
+            
+            # Score each document for relevance
             for doc_index, doc in enumerate(documents[:3]):  # Limit to 3 docs for speed
                 content = doc.page_content
                 
-                # Extract proper document title/name
-                doc_source = self._get_document_title(doc, doc_index)
+                # Calculate relevance score (more sophisticated than just boolean)
+                score = self._calculate_relevance_score(question_text, content)
                 
-                # Quick relevance check and context extraction
-                if self._is_content_relevant(question_text, content):
-                    # Extract relevant snippet and create AI summary
-                    context_snippet = self._extract_relevant_snippet(question_text, content)
-                    ai_summary = self._create_ai_summary(context_snippet, question_text, doc_source)
-                    
-                    question_specific_contexts.append({
-                        "text": ai_summary,
-                        "source": doc_source,
-                        "document_index": doc_index
-                    })
+                if score > best_score:
+                    best_score = score
+                    best_doc = doc
+                    best_doc_index = doc_index
             
-            # ALWAYS provide at least one context with AI summary
-            if not question_specific_contexts:
+            # Create AI summary for the MOST relevant document only
+            if best_doc and best_score > 0:
+                doc_source = self._get_document_title(best_doc, best_doc_index)
+                context_snippet = self._extract_relevant_snippet(question_text, best_doc.page_content)
+                ai_summary = self._create_ai_summary(context_snippet, question_text, doc_source)
+                
+                question_specific_contexts = [{
+                    "text": ai_summary,
+                    "source": doc_source,
+                    "document_index": best_doc_index
+                }]
+            else:
+                # Fallback to first document if no relevant content found
                 first_doc = documents[0] if documents else None
                 if first_doc:
-                    # Get proper document title
                     doc_title = self._get_document_title(first_doc, 0)
-                    # Create AI summary for fallback content
-                    fallback_content = first_doc.page_content[:800]  # Use more content for better summary
+                    fallback_content = first_doc.page_content[:800]
                     ai_summary = self._create_ai_summary(fallback_content, question_text, doc_title)
                     
-                    question_specific_contexts.append({
+                    question_specific_contexts = [{
                         "text": ai_summary,
                         "source": doc_title,
                         "document_index": 0
-                    })
+                    }]
                 else:
-                    # Absolute fallback if no documents
-                    question_specific_contexts.append({
+                    question_specific_contexts = [{
                         "text": "No documents available for context extraction. Please upload documents to generate relevant context.",
                         "source": "System Message",
                         "document_index": -1
-                    })
+                    }]
             
             results.append({
                 "question_id": question["id"],
-                "contexts": question_specific_contexts[:2]  # Top 2 contexts max
+                "contexts": question_specific_contexts  # Always exactly 1 context now
             })
         
         return results
@@ -854,6 +859,44 @@ class EvolInstructService:
         # Check if any key terms appear in content
         content_lower = content.lower()
         return any(term in content_lower for term in key_terms if len(term) > 2)
+
+    def _calculate_relevance_score(self, question: str, content: str) -> float:
+        """Calculate numeric relevance score for better document ranking"""
+        if not question or not content:
+            return 0.0
+
+        # Extract key terms from question (remove common words)
+        common_words = {'what', 'how', 'why', 'when', 'where', 'who', 'which', 'is', 'are',
+                        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        question_words = set(word.lower().strip('?.,!')
+                             for word in question.split())
+        key_terms = list(question_words - common_words)
+        key_terms = [term for term in key_terms if len(term) > 2]  # Filter short terms
+
+        if not key_terms:
+            return 0.0
+
+        content_lower = content.lower()
+        score = 0.0
+        
+        # Count term frequency and apply weighting
+        for term in key_terms:
+            term_count = content_lower.count(term)
+            if term_count > 0:
+                # Higher score for more occurrences, with diminishing returns
+                score += min(term_count * 2, 10)  # Cap individual term contribution
+                
+                # Bonus for terms appearing early in content (more relevant)
+                first_occurrence = content_lower.find(term)
+                if first_occurrence < 200:  # First 200 characters
+                    score += 3
+                elif first_occurrence < 500:  # First 500 characters
+                    score += 1
+
+        # Normalize by content length to favor focused content
+        normalized_score = score / max(len(content) / 1000, 1)  # Per 1000 characters
+        
+        return normalized_score
 
     def _generate_cache_key(self, documents: List[Document], settings: Optional[GenerationSettings]) -> str:
         """Generate cache key from documents and settings"""

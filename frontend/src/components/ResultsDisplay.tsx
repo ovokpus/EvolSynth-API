@@ -12,11 +12,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
 
-  // DEBUG: Log raw results from backend
-  console.log("🔍 DEBUG ResultsDisplay - Raw results:", results);
-  if (results) {
-    console.log("🔍 DEBUG ResultsDisplay - question_contexts:", results.question_contexts);
-  }
+
 
   const copyToClipboard = async (text: string, id: string) => {
     try {
@@ -28,31 +24,52 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
     }
   };
 
-  // Helper function to format context for export
+  // Helper function to format context for export - BULLETPROOF VERSION
   const formatContextForExport = (context: (string | EnhancedContext)[] | string | undefined): string => {
-    if (!context) return '';
-    
-    // DEBUG: Log what we're receiving
-    console.log("🔍 DEBUG formatContextForExport - Input:", context);
-    console.log("🔍 DEBUG formatContextForExport - Type:", typeof context);
-    console.log("🔍 DEBUG formatContextForExport - Array?:", Array.isArray(context));
+    if (!context) return 'No context available';
     
     if (typeof context === 'string') {
       return context;
     }
     
     if (Array.isArray(context)) {
-      return context.map(ctx => {
-        console.log("🔍 DEBUG formatContextForExport - Ctx item:", ctx, "Type:", typeof ctx);
+      return context.map((ctx, index) => {
         if (typeof ctx === 'string') {
           return ctx;
-        } else if (ctx && typeof ctx === 'object' && 'text' in ctx && 'source' in ctx) {
-          // Enhanced context object
-          console.log("🔍 DEBUG formatContextForExport - Enhanced context found!");
-          return `[${ctx.source}] ${ctx.text}`;
+        } else if (ctx && typeof ctx === 'object') {
+          // Try multiple ways to extract enhanced context data
+          const ctxObj = ctx as unknown as Record<string, unknown>;
+          
+          // Method 1: Standard enhanced context
+          if (ctxObj.text && ctxObj.source) {
+            return `[${ctxObj.source}] ${ctxObj.text}`;
+          }
+          
+          // Method 2: Check for nested properties
+          if (ctxObj.contexts && Array.isArray(ctxObj.contexts) && ctxObj.contexts[0]) {
+            const nestedCtx = ctxObj.contexts[0];
+            if (nestedCtx.text && nestedCtx.source) {
+              return `[${nestedCtx.source}] ${nestedCtx.text}`;
+            }
+          }
+          
+          // Method 3: Check if it's a question context object
+          if (ctxObj.question_id && ctxObj.contexts) {
+            return formatContextForExport(ctxObj.contexts as (string | EnhancedContext)[] | string);
+          }
+          
+          // Method 4: Look for any text-like content
+          const possibleText = ctxObj.content || ctxObj.text || ctxObj.answer || ctxObj.summary;
+          const possibleSource = ctxObj.source || ctxObj.title || ctxObj.filename || ctxObj.name || `Context ${index + 1}`;
+          
+          if (possibleText) {
+            return `[${possibleSource}] ${possibleText}`;
+          }
+          
+          // Method 5: Fallback to JSON if it's a complex object
+          return `[Object ${index + 1}] ${JSON.stringify(ctxObj).substring(0, 100)}...`;
         } else {
-          console.log("🔍 DEBUG formatContextForExport - Unknown object, stringifying");
-          return String(ctx);
+          return String(ctx || `Empty context ${index + 1}`);
         }
       }).join('; ');
     }
@@ -155,12 +172,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   // Convert backend data to display format
   const displayQuestions: DisplayQuestion[] = results ? getDisplayQuestions(results) : [];
   
-  // DEBUG: Log displayQuestions to see what we're getting
-  if (displayQuestions.length > 0) {
-    console.log("🔍 DEBUG displayQuestions:", displayQuestions);
-    console.log("🔍 DEBUG First question context:", displayQuestions[0].context);
-    console.log("🔍 DEBUG Context type:", typeof displayQuestions[0].context);
-  }
+
 
   const tabs = [
     { id: 'questions' as const, label: 'Questions & Answers', icon: MessageSquare, count: displayQuestions.length },
