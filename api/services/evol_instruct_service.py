@@ -765,17 +765,29 @@ class EvolInstructService:
                         "document_index": doc_index
                     })
             
-            # If no relevant contexts found, provide a minimal fallback
+            # ALWAYS provide at least one context (for debugging)
             if not question_specific_contexts:
                 first_doc = documents[0] if documents else None
                 if first_doc:
                     fallback_content = first_doc.page_content[:200] + "..."
                     fallback_source = first_doc.metadata.get('source', 'Document 1')
                     question_specific_contexts.append({
-                        "text": fallback_content,
-                        "source": fallback_source,
+                        "text": f"[FALLBACK CONTEXT] {fallback_content}",
+                        "source": f"📄 {fallback_source}",
                         "document_index": 0
                     })
+                else:
+                    # Absolute fallback if no documents
+                    question_specific_contexts.append({
+                        "text": "[DEBUG] No documents available for context extraction",
+                        "source": "System Debug",
+                        "document_index": -1
+                    })
+            
+            # Add debug info to contexts
+            for ctx in question_specific_contexts:
+                if "text" in ctx:
+                    ctx["text"] = f"[CONTEXT DEBUG: question={question.get('id', 'unknown')}] {ctx['text']}"
             
             results.append({
                 "question_id": question["id"],
