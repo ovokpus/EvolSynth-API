@@ -34,17 +34,20 @@ class EvaluationService:
             Question: {question}
             Evolution Type: {evolution_type}
 
-            Rate the question on a scale of 1-10 based on these criteria:
-            1. Question clarity and specificity (1-3: Poor, 4-6: Fair, 7-8: Good, 9-10: Excellent)
+            Rate the question on a scale of 1-9 based on these criteria:
+            1. Question clarity and specificity (1-3: Poor, 4-6: Fair, 7-8: Good, 9: Excellent)
             2. Appropriate complexity for the evolution type
             3. Educational/evaluation value
             4. Grammatical correctness and coherence
             5. Specificity and actionability
 
+            IMPORTANT: Never give a perfect score of 10. Even excellent content has room for improvement.
+            Real-world content typically scores between 5-8, with 9 being exceptional.
+
             Provide your evaluation in this exact format:
             
             Reasoning: [Brief explanation of your assessment]
-            Score: [Single number from 1-10]
+            Score: [Single number from 1-9]
             
             Evaluation:""",
             
@@ -54,17 +57,20 @@ class EvaluationService:
             Question: {question}
             Generated Answer: {answer}
 
-            Rate the answer on a scale of 1-10 based on these criteria:
-            1. Factual accuracy and correctness (1-3: Many errors, 4-6: Some inaccuracies, 7-8: Mostly accurate, 9-10: Highly accurate)
+            Rate the answer on a scale of 1-9 based on these criteria:
+            1. Factual accuracy and correctness (1-3: Many errors, 4-6: Some inaccuracies, 7-8: Mostly accurate, 9: Highly accurate)
             2. Completeness of the response
             3. Clarity and coherence
             4. Relevance to the question
             5. Depth of explanation
 
+            IMPORTANT: Never give a perfect score of 10. Even the best answers can be improved.
+            Be critical and realistic in your assessment. Most good answers score 6-8.
+
             Provide your evaluation in this exact format:
             
             Reasoning: [Brief explanation of your assessment]
-            Score: [Single number from 1-10]
+            Score: [Single number from 1-9]
 
             Evaluation:""",
             
@@ -77,18 +83,21 @@ class EvaluationService:
             Evolution Type: {evolution_type}
             Claimed Complexity Level: {complexity_level}
 
-            Rate the evolution effectiveness on a scale of 1-10:
-            - Simple Evolution (1-3: No improvement, 4-6: Minor enhancement, 7-8: Good evolution, 9-10: Excellent evolution)
+            Rate the evolution effectiveness on a scale of 1-9:
+            - Simple Evolution (1-3: No improvement, 4-6: Minor enhancement, 7-8: Good evolution, 9: Excellent evolution)
             - Multi-Context Evolution: Should require synthesis across multiple information sources
             - Reasoning Evolution: Should demand logical inference and multi-step thinking
             - Complex Evolution: Should require meta-cognitive skills and advanced reasoning
+
+            IMPORTANT: Never give a perfect score of 10. Evolution can always be improved further.
+            Be realistic - most effective evolutions score 6-8.
 
             Assess if the evolution type successfully created appropriate cognitive complexity:
 
             Provide your evaluation in this exact format:
             
             Reasoning: [Brief explanation of your assessment]
-            Score: [Single number from 1-10]
+            Score: [Single number from 1-9]
 
             Evaluation:"""
         }
@@ -140,13 +149,16 @@ class EvaluationService:
             detailed_results.append(question_result)
         
         # Calculate overall scores (normalize to 0-1 scale for compatibility)
+        # ABSOLUTE SAFEGUARD: Quality scores NEVER reach 100%
         overall_scores = {}
         for metric, scores in metric_scores.items():
             if scores:
-                # Convert 1-10 scale to 0-1 scale for display
+                # Convert 1-9 scale to 0-1 scale for display
                 avg_score = sum(scores) / len(scores)
-                normalized_score = (avg_score - 1) / 9  # Convert 1-10 to 0-1
-                overall_scores[metric] = max(0.0, min(1.0, normalized_score))  # Clamp to 0-1
+                normalized_score = (avg_score - 1) / 8  # Convert 1-9 to 0-1
+                # CRITICAL: Cap at 95% maximum (0.95) - NEVER 100%!
+                capped_score = min(0.95, normalized_score)  # Hard ceiling at 95%
+                overall_scores[metric] = max(0.0, capped_score)
             else:
                 overall_scores[metric] = 0.0
         
@@ -155,15 +167,29 @@ class EvaluationService:
         
         end_time = time.time()
         
+        # FINAL ABSOLUTE SAFEGUARD: Double-check no 100% scores exist
+        safeguarded_scores = {}
+        for metric, score in overall_scores.items():
+            # If somehow a 100% (1.0) score exists, cap it at 95%
+            if score >= 1.0:
+                print(f"⚠️  PREVENTED 100% SCORE: {metric} was {score}, capped to 0.95")
+                safeguarded_scores[metric] = 0.95
+            elif score >= 0.98:  # Also cap anything close to 100%
+                print(f"⚠️  PREVENTED NEAR-100% SCORE: {metric} was {score:.3f}, capped to 0.95")
+                safeguarded_scores[metric] = 0.95
+            else:
+                safeguarded_scores[metric] = score
+
         return {
             "success": True,
             "evaluation_id": evaluation_id,
-            "overall_scores": overall_scores,
+            "overall_scores": safeguarded_scores,  # Use safeguarded scores
             "detailed_results": detailed_results,
             "summary_statistics": summary_statistics,
-            "raw_scores": metric_scores,  # Include raw 1-10 scores for debugging
+            "raw_scores": metric_scores,  # Include raw 1-9 scores for debugging
             "evaluation_time_seconds": end_time - start_time,
-            "timestamp": datetime.now()
+            "timestamp": datetime.now(),
+            "quality_cap_info": "Quality scores are capped at 95% maximum to ensure realistic assessment"
         }
     
     def _evaluate_single_metric(
@@ -199,7 +225,12 @@ class EvaluationService:
         )
         
         evaluation = str(response.content).strip() if hasattr(response, 'content') else str(response).strip()
-        return self._extract_numerical_score(evaluation, fallback_score=6.5)
+        raw_score = self._extract_numerical_score(evaluation, fallback_score=6.5)
+        
+        # ADDITIONAL SAFEGUARD: Add realistic variance and prevent perfect scores
+        # Even if LLM tries to give 9.0, we cap it realistically
+        final_score = min(8.8, raw_score)  # Absolute maximum is 8.8/9.0 = 97.8%
+        return final_score
     
     def _evaluate_answer_accuracy(self, question: Dict[str, Any], answer: str) -> float:
         """Evaluate answer accuracy using LLM-as-judge with numerical scoring"""
@@ -216,7 +247,12 @@ class EvaluationService:
         )
         
         evaluation = str(response.content).strip() if hasattr(response, 'content') else str(response).strip()
-        return self._extract_numerical_score(evaluation, fallback_score=6.0)
+        raw_score = self._extract_numerical_score(evaluation, fallback_score=6.0)
+        
+        # ADDITIONAL SAFEGUARD: Cap answer accuracy (be extra critical)
+        # Even excellent answers have room for improvement
+        final_score = min(8.5, raw_score)  # Absolute maximum is 8.5/9.0 = 94.4%
+        return final_score
     
     def _evaluate_evolution_effectiveness(self, question: Dict[str, Any]) -> float:
         """Evaluate evolution effectiveness using LLM-as-judge with numerical scoring"""
@@ -231,44 +267,58 @@ class EvaluationService:
         )
         
         evaluation = str(response.content).strip() if hasattr(response, 'content') else str(response).strip()
-        return self._extract_numerical_score(evaluation, fallback_score=6.5)
+        raw_score = self._extract_numerical_score(evaluation, fallback_score=6.5)
+        
+        # ADDITIONAL SAFEGUARD: Cap evolution effectiveness 
+        # Evolution can always be improved - no perfect scores!
+        final_score = min(8.7, raw_score)  # Absolute maximum is 8.7/9.0 = 96.7%
+        return final_score
     
     def _extract_numerical_score(self, evaluation_text: str, fallback_score: float = 5.0) -> float:
         """
-        Extract numerical score from LLM evaluation response
+        Extract numerical score from LLM evaluation response with ABSOLUTE CAPS
         
         Args:
             evaluation_text: The LLM's evaluation response
             fallback_score: Score to return if extraction fails
             
         Returns:
-            Float score between 1.0 and 10.0
+            Float score between 1.0 and 9.0 (NEVER 10.0!)
         """
+        extracted_score = None
+        
         # Look for "Score: X" pattern first
         score_match = re.search(r'Score:\s*(\d+(?:\.\d+)?)', evaluation_text, re.IGNORECASE)
         if score_match:
-            score = float(score_match.group(1))
-            return max(1.0, min(10.0, score))  # Clamp to 1-10 range
+            extracted_score = float(score_match.group(1))
         
-        # Look for any number followed by "/10" or "out of 10"
-        score_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:/10|out of 10)', evaluation_text, re.IGNORECASE)
-        if score_match:
-            score = float(score_match.group(1))
-            return max(1.0, min(10.0, score))
+        # Look for any number followed by "/10" or "out of 10" or "/9"
+        if not extracted_score:
+            score_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:/10|/9|out of 10|out of 9)', evaluation_text, re.IGNORECASE)
+            if score_match:
+                extracted_score = float(score_match.group(1))
         
         # Look for standalone numbers that might be scores
-        numbers = re.findall(r'\b(\d+(?:\.\d+)?)\b', evaluation_text)
-        for num_str in numbers:
-            num = float(num_str)
-            if 1.0 <= num <= 10.0:  # Reasonable score range
-                return num
+        if not extracted_score:
+            numbers = re.findall(r'\b(\d+(?:\.\d+)?)\b', evaluation_text)
+            for num_str in numbers:
+                num = float(num_str)
+                if 1.0 <= num <= 10.0:  # Reasonable score range
+                    extracted_score = num
+                    break
         
-        # Fallback: Try to infer from quality words
+        # Apply extracted score with caps
+        if extracted_score:
+            # ABSOLUTE SAFEGUARD: Cap at 9.0 maximum, NEVER allow 10.0!
+            capped_score = min(9.0, extracted_score)
+            return max(1.0, capped_score)
+        
+        # Fallback: Try to infer from quality words (also capped)
         text_lower = evaluation_text.lower()
         if any(word in text_lower for word in ['excellent', 'outstanding', 'exceptional']):
-            return 9.0
+            return 8.5  # Excellent but not perfect
         elif any(word in text_lower for word in ['good', 'well', 'solid', 'effective']):
-            return 7.5
+            return 7.0  # Good but realistic
         elif any(word in text_lower for word in ['fair', 'adequate', 'reasonable']):
             return 6.0
         elif any(word in text_lower for word in ['poor', 'weak', 'lacking']):
@@ -276,8 +326,8 @@ class EvaluationService:
         elif any(word in text_lower for word in ['terrible', 'awful', 'bad']):
             return 2.0
         
-        # Final fallback
-        return fallback_score
+        # Final fallback - cap even this
+        return min(8.0, fallback_score)
     
     def _generate_summary_statistics(
         self,
