@@ -13,12 +13,12 @@ export default function HeroSection() {
   };
 
   const openDocumentation = () => {
-    // Option 1: Open external Swagger docs (current implementation)
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    window.open(`${baseUrl}/docs`, '_blank');
+    // Option 1: Open external Swagger docs
+    // const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    // window.open(`${baseUrl}/docs`, '_blank');
     
-    // Option 2: Show modal documentation (uncomment to use)
-    // setShowDocumentation(true);
+    // Option 2: Show modal documentation (ACTIVE)
+    setShowDocumentation(true);
   };
 
   return (

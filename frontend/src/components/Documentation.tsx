@@ -149,9 +149,29 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-primary-700 mb-4">Quick Start Guide</h3>
                 
-                <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">!</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-800 mb-1">Prerequisites</h4>
+                      <ul className="text-sm text-blue-700 space-y-1">
+                        <li>• Backend running on <code className="bg-blue-100 px-1 rounded">http://localhost:8000</code></li>
+                        <li>• OpenAI API key configured</li>
+                        <li>• LangSmith API key for monitoring (optional)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
                   <div>
-                    <h4 className="font-semibold text-primary-700 mb-2">1. Health Check</h4>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                      <h4 className="font-semibold text-primary-700">Health Check</h4>
+                    </div>
+                    <p className="text-primary-600 text-sm mb-2">Verify the API is running and all services are connected:</p>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
                       <code className="text-green-400 text-sm">curl http://localhost:8000/health</code>
                       <button
@@ -161,10 +181,17 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                         {copiedCode === 'health' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
+                    <div className="mt-2 text-xs text-primary-600">
+                      Expected response: <code className="bg-light-100 px-1 rounded">status: healthy, dependencies connected</code>
+                    </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-primary-700 mb-2">2. Get Sample Documents</h4>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                      <h4 className="font-semibold text-primary-700">Get Sample Documents</h4>
+                    </div>
+                    <p className="text-primary-600 text-sm mb-2">Fetch sample documents to test the API:</p>
                     <div className="bg-gray-900 rounded-lg p-4 relative">
                       <code className="text-green-400 text-sm">curl http://localhost:8000/documents/sample</code>
                       <button
@@ -174,11 +201,56 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                         {copiedCode === 'sample' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
+                    <div className="mt-2 text-xs text-primary-600">
+                      Returns: <code className="bg-light-100 px-1 rounded">3 sample documents about financial aid</code>
+                    </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-primary-700 mb-2">3. Generate Synthetic Data</h4>
-                    <p className="text-primary-600 text-sm mb-2">Use the interface above or make direct API calls</p>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-6 h-6 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                      <h4 className="font-semibold text-primary-700">Generate Synthetic Data</h4>
+                    </div>
+                    <p className="text-primary-600 text-sm mb-3">Choose your method:</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-lg p-4">
+                        <h5 className="font-medium text-primary-700 mb-2">🎨 Use the Interface</h5>
+                        <p className="text-sm text-primary-600 mb-3">Click "Start Generating" above for a guided experience</p>
+                        <div className="text-xs text-primary-500">
+                          ✓ Visual document upload<br/>
+                          ✓ Interactive settings<br/>
+                          ✓ Real-time results
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-light-50 to-primary-50 border border-light-300 rounded-lg p-4">
+                        <h5 className="font-medium text-primary-700 mb-2">⚡ Use the API</h5>
+                        <p className="text-sm text-primary-600 mb-3">Direct API calls for programmatic use</p>
+                        <div className="text-xs text-primary-500">
+                          ✓ Full control<br/>
+                          ✓ Batch processing<br/>
+                          ✓ Integration ready
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="w-6 h-6 bg-accent-emerald text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                      <h4 className="font-semibold text-primary-700">Monitor with LangSmith</h4>
+                    </div>
+                    <p className="text-primary-600 text-sm mb-2">Track your evaluations and optimize prompts:</p>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <code className="text-purple-400 text-sm">🔗 https://smith.langchain.com/ → EvolSynth-API</code>
+                      <button
+                        onClick={() => copyToClipboard('https://smith.langchain.com/', 'langsmith')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'langsmith' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -251,6 +323,102 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                         className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
                       >
                         {copiedCode === 'evaluate' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-3">JavaScript/Node.js Example</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <pre className="text-blue-400 text-sm overflow-x-auto">{`const response = await fetch('http://localhost:8000/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    documents: [{
+      content: "Your document content here...",
+      metadata: { source: "doc.txt", type: "text" }
+    }],
+    settings: {
+      execution_mode: "concurrent",
+      simple_evolution_count: 3,
+      multi_context_evolution_count: 2,
+      reasoning_evolution_count: 2,
+      temperature: 0.7
+    },
+    max_iterations: 1
+  })
+});
+
+const result = await response.json();
+console.log(\`Generated \${result.evolved_questions.length} questions!\`);`}</pre>
+                      <button
+                        onClick={() => copyToClipboard(`const response = await fetch('http://localhost:8000/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    documents: [{
+      content: "Your document content here...",
+      metadata: { source: "doc.txt", type: "text" }
+    }],
+    settings: {
+      execution_mode: "concurrent",
+      simple_evolution_count: 3,
+      multi_context_evolution_count: 2,
+      reasoning_evolution_count: 2,
+      temperature: 0.7
+    },
+    max_iterations: 1
+  })
+});
+
+const result = await response.json();
+console.log(\`Generated \${result.evolved_questions.length} questions!\`);`, 'javascript')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'javascript' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-primary-700 mb-3">cURL Example</h4>
+                    <div className="bg-gray-900 rounded-lg p-4 relative">
+                      <pre className="text-yellow-400 text-sm overflow-x-auto">{`curl -X POST "http://localhost:8000/generate" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "documents": [{
+      "content": "Your document content...",
+      "metadata": {"source": "doc.txt", "type": "text"}
+    }],
+    "settings": {
+      "execution_mode": "concurrent",
+      "simple_evolution_count": 3,
+      "multi_context_evolution_count": 2,
+      "reasoning_evolution_count": 2,
+      "temperature": 0.7
+    },
+    "max_iterations": 1
+  }'`}</pre>
+                      <button
+                        onClick={() => copyToClipboard(`curl -X POST "http://localhost:8000/generate" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "documents": [{
+      "content": "Your document content...",
+      "metadata": {"source": "doc.txt", "type": "text"}
+    }],
+    "settings": {
+      "execution_mode": "concurrent",
+      "simple_evolution_count": 3,
+      "multi_context_evolution_count": 2,
+      "reasoning_evolution_count": 2,
+      "temperature": 0.7
+    },
+    "max_iterations": 1
+  }'`, 'curl')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-white"
+                      >
+                        {copiedCode === 'curl' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
