@@ -31,21 +31,21 @@ from api.models.responses import (
 from api.models.core import DocumentInput, PerformanceMetrics
 
 # Standard services
-from services.evol_instruct_service import EvolInstructService
-from services.evaluation_service import EvaluationService
-from services.document_service import DocumentService
+from api.services.evol_instruct_service import EvolInstructService
+from api.services.evaluation_service import EvaluationService
+from api.services.document_service import DocumentService
 
 # Performance optimizations (now integrated into standard service)
 
 try:
-    from utils.cache_manager import cache_manager, result_cache, document_cache
+    from api.utils.cache_manager import cache_manager, result_cache, document_cache
     CACHE_AVAILABLE = True
 except ImportError:
     print("⚠️  Cache manager not available, caching disabled")
     CACHE_AVAILABLE = False
 
 try:
-    from performance_optimization_config import performance_monitor, get_optimization_config, OptimizationLevel
+    from api.performance_optimization_config import performance_monitor, get_optimization_config, OptimizationLevel
     PERFORMANCE_MONITORING_AVAILABLE = True
 except ImportError:
     print("⚠️  Performance monitoring not available")
