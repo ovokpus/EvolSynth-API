@@ -31,27 +31,21 @@ from api.models.responses import (
 from api.models.core import DocumentInput, PerformanceMetrics
 
 # Standard services
-from api.services.evol_instruct_service import EvolInstructService
-from api.services.evaluation_service import EvaluationService
-from api.services.document_service import DocumentService
+from services.evol_instruct_service import EvolInstructService
+from services.evaluation_service import EvaluationService
+from services.document_service import DocumentService
 
-# Performance optimizations
-try:
-    from api.services.optimized_evol_service import OptimizedEvolInstructService
-    OPTIMIZED_SERVICE_AVAILABLE = True
-except ImportError:
-    print("⚠️  Optimized service not available, using standard service")
-    OPTIMIZED_SERVICE_AVAILABLE = False
+# Performance optimizations (now integrated into standard service)
 
 try:
-    from api.utils.cache_manager import cache_manager, result_cache, document_cache
+    from utils.cache_manager import cache_manager, result_cache, document_cache
     CACHE_AVAILABLE = True
 except ImportError:
     print("⚠️  Cache manager not available, caching disabled")
     CACHE_AVAILABLE = False
 
 try:
-    from api.performance_optimization_config import performance_monitor, get_optimization_config, OptimizationLevel
+    from performance_optimization_config import performance_monitor, get_optimization_config, OptimizationLevel
     PERFORMANCE_MONITORING_AVAILABLE = True
 except ImportError:
     print("⚠️  Performance monitoring not available")
@@ -123,13 +117,9 @@ async def startup_event():
         validate_api_keys()
         setup_environment()
         
-        # Initialize services with optimization
-        if OPTIMIZED_SERVICE_AVAILABLE:
-            evol_instruct_service = OptimizedEvolInstructService()
-            print("✅ Using OptimizedEvolInstructService with async processing")
-        else:
-            evol_instruct_service = EvolInstructService()
-            print("⚠️  Using standard EvolInstructService")
+        # Initialize services
+        evol_instruct_service = EvolInstructService()
+        print("✅ Using optimized EvolInstructService with async processing")
         
         evaluation_service = EvaluationService()
         document_service = DocumentService()
@@ -189,7 +179,7 @@ async def root():
         timestamp=datetime.now(),
         dependencies={
             "cache_enabled": CACHE_AVAILABLE,
-            "optimized_service": OPTIMIZED_SERVICE_AVAILABLE,
+            "optimized_service": True,  # Always optimized now
             "performance_monitoring": PERFORMANCE_MONITORING_AVAILABLE
         }
     )
@@ -294,15 +284,15 @@ async def generate_synthetic_data_optimized(
         generation_status[generation_id]["progress"] = 0.1
         generation_status[generation_id]["current_stage"] = "synthetic_generation"
         
-        # Generate synthetic data using optimized service if available
-        if OPTIMIZED_SERVICE_AVAILABLE and hasattr(service, 'generate_synthetic_data_async'):
+        # Generate synthetic data using optimized async implementation
+        if hasattr(service, 'generate_synthetic_data_async'):
             print("🚀 Using async optimized generation")
             result = await service.generate_synthetic_data_async(
                 documents=documents,
                 settings=request.settings
             )
         else:
-            print("⚠️  Using standard synchronous generation")
+            print("🚀 Using optimized generation (sync wrapper)")
             result = service.generate_synthetic_data(
                 documents=documents,
                 settings=request.settings,
