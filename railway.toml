@@ -1,0 +1,44 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+startCommand = "./start.sh"
+
+[env]
+# Railway will automatically set PORT, but we can specify defaults
+PORT = { default = "8000" }
+ENVIRONMENT = { default = "production" }
+WORKERS = { default = "2" }
+MAX_CONCURRENCY = { default = "8" }
+
+# Redis configuration for Railway Redis service
+REDIS_HOST = { default = "${{Redis.RAILWAY_PRIVATE_DOMAIN}}" }
+REDIS_PORT = { default = "${{Redis.RAILWAY_TCP_PROXY_PORT}}" }
+REDIS_PASSWORD = { default = "${{Redis.REDIS_PASSWORD}}" }
+REDIS_URL = { default = "${{Redis.REDIS_URL}}" }
+
+# Cache settings optimized for Railway
+CACHE_ENABLED = { default = "true" }
+CACHE_TTL = { default = "3600" }
+DOCUMENT_CACHE_TTL = { default = "7200" }
+
+# Performance settings for Railway's resource limits
+REQUEST_TIMEOUT = { default = "120" }
+MAX_TOKENS = { default = "500" }
+BATCH_SIZE = { default = "4" }
+
+# Security and CORS for Railway deployment
+ALLOWED_ORIGINS = { default = "*" }
+RATE_LIMIT_ENABLED = { default = "true" }
+
+# Logging optimized for Railway
+LOG_LEVEL = { default = "INFO" }
+
+[experimental]
+# Enable Railway's new features
+incrementalUploads = true 
