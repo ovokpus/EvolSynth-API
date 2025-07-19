@@ -356,6 +356,14 @@ class APIClient {
         logger.warn(`Evaluation skipped: enabled=${settings.evaluationEnabled}, questions=${generationResponse.data.evolved_questions.length}`);
       }
 
+      // DEBUG: Log raw backend response
+      console.log('🔍 DEBUG API: Raw backend response:', {
+        evolved_questions: generationResponse.data.evolved_questions.length,
+        question_answers: generationResponse.data.question_answers.length,
+        question_contexts: generationResponse.data.question_contexts.length,
+        context_sample: generationResponse.data.question_contexts.slice(0, 2)
+      });
+
       // Convert to frontend format
       const frontendResults = this.backendToFrontendResults(
         generationResponse.data,
