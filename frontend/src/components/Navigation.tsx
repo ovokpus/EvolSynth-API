@@ -51,7 +51,7 @@ export default function Navigation() {
               </div>
             </div>
             <div className="text-xl font-bold text-primary-700">
-              EvolSynth API
+              EvolSynth
             </div>
           </div>
 

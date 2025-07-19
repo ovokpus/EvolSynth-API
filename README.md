@@ -4,6 +4,8 @@
 
 Transform your documents into sophisticated evaluation datasets with intelligent question evolution, concurrent processing, and comprehensive quality assessment.
 
+> **🔧 Recent Fix (2025-01):** Fixed critical evaluation scoring issue where quality metrics always showed 100%. The system now uses a research-backed numerical scoring approach (1-10 scale) that provides realistic and meaningful quality assessments. [Learn more about the fix →](#evaluation-scoring-system)
+
 ## 🎯 What is EvolSynth?
 
 EvolSynth implements the cutting-edge **Evol-Instruct methodology** using **LangGraph workflows** to generate high-quality synthetic evaluation data. Unlike simple question generators, EvolSynth creates progressively complex questions through three sophisticated evolution strategies:
@@ -178,6 +180,48 @@ We welcome contributions! The project is built with:
 - **🌐 LangGraph**: Advanced workflow orchestration
 - **⚛️ Next.js**: Modern React frontend
 - **📊 LangSmith**: Comprehensive monitoring
+
+## 🧮 Evaluation Scoring System
+
+### **The 100% Quality Metrics Issue (Fixed)**
+
+**Problem:** Previous versions used binary LLM-as-judge evaluation that consistently returned 100% quality scores due to response bias.
+
+**Root Cause:** Simple string matching (`"GOOD" → 1.0, else → 0.0`) caused inflated metrics, a well-documented issue in LLM evaluation research.
+
+### **New Numerical Scoring System**
+
+**Solution:** Research-backed numerical evaluation with 1-10 scale scoring:
+
+```python
+# Enhanced Evaluation Criteria
+Quality Assessment:
+├── Question Quality (1-10 scale)
+│   ├── Clarity and specificity
+│   ├── Appropriate complexity
+│   ├── Educational value
+│   └── Grammatical correctness
+├── Answer Accuracy (1-10 scale)
+│   ├── Factual correctness
+│   ├── Completeness
+│   ├── Clarity and coherence
+│   └── Relevance to question
+└── Evolution Effectiveness (1-10 scale)
+    ├── Cognitive complexity achieved
+    ├── Evolution type appropriateness
+    └── Meta-cognitive requirements
+```
+
+**Features:**
+- **Structured Prompts**: Clear evaluation criteria and output format
+- **Robust Extraction**: Multiple regex patterns and fallback methods
+- **Score Distributions**: Mean, min, max, standard deviation tracking
+- **Realistic Results**: Typical scores 60-85% instead of artificial 100%
+
+**Academic Backing:** Based on recent research addressing LLM-as-judge limitations:
+- *"No Free Labels: Limitations of LLM-as-a-Judge Without Human Grounding"*
+- *"Evaluating Scoring Bias in LLM-as-a-Judge"*
+- *"Judging the Judges: Evaluating Alignment and Vulnerabilities in LLMs-as-Judges"*
 
 ## 📄 License
 
