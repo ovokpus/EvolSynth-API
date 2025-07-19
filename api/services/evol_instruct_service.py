@@ -503,56 +503,96 @@ class EvolInstructService:
         return cleaned_text
     
     def _extract_contexts_sync(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
-        """Intelligent context extraction with LLM summarization"""
+        """Question-specific context extraction with relevance-based selection"""
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
-        # Create summarization prompt
-        summarization_prompt = ChatPromptTemplate.from_template("""
-        Summarize the following document content in 2-3 sentences, focusing on the key information relevant to question answering:
+        # Create question-specific context extraction prompt
+        context_extraction_prompt = ChatPromptTemplate.from_template("""
+        Given this specific question and document content, extract and summarize ONLY the information that is directly relevant to answering this question. Focus on the specific concepts, facts, or details that would help answer the question.
 
-        Document: {content}
+        Question: {question}
 
-        Summary:""")
+        Document Content: {content}
+
+        Instructions:
+        - Extract only information relevant to the specific question
+        - Summarize in 2-3 sentences
+        - If the document doesn't contain relevant information, say "No relevant information found in this section"
+        - Focus on specific details that help answer the question
+
+        Relevant Context:""")
         
         for question in questions:
-            contexts = []
             question_text = question.get('question', '')
+            question_specific_contexts = []
             
-            for doc in documents[:2]:  # Process up to 2 documents
+            # Process each document to find question-relevant content
+            for doc in documents[:3]:  # Check up to 3 documents for better coverage
                 content = doc.page_content
                 
-                # If content is short enough, use as-is
+                # For short content, check relevance before including
                 if len(content) <= 400:
-                    contexts.append(content)
+                    # Quick relevance check for short content
+                    if self._is_content_relevant(question_text, content):
+                        question_specific_contexts.append(content)
                 else:
                     try:
-                        # Use LLM to create focused summary
-                        response = llm.invoke(summarization_prompt.format(content=content[:2000]))
-                        summary = response.content.strip() if hasattr(response, 'content') else str(response).strip()
+                        # Use LLM to extract question-specific context
+                        response = llm.invoke(context_extraction_prompt.format(
+                            question=question_text,
+                            content=content[:2000]  # Use more content for better context
+                        ))
+                        extracted_context = response.content.strip() if hasattr(response, 'content') else str(response).strip()
                         
-                        # Clean up any boilerplate from summary
-                        summary = self._clean_boilerplate(summary)
+                        # Clean up any boilerplate from the response
+                        extracted_context = self._clean_boilerplate(extracted_context)
                         
-                        contexts.append(summary)
+                        # Only include if relevant information was found
+                        if extracted_context and not any(phrase in extracted_context.lower() for phrase in [
+                            "no relevant information", "not relevant", "doesn't contain", "does not contain"
+                        ]):
+                            question_specific_contexts.append(extracted_context)
                         
                     except Exception as e:
-                        print(f"Error summarizing context: {e}")
-                        # Fallback to simple truncation if summarization fails
-                        truncated = content[:600]
-                        last_period = truncated.rfind('.')
-                        if last_period > 400:
-                            contexts.append(content[:last_period + 1])
-                        else:
-                            contexts.append(truncated + "...")
+                        print(f"Error extracting question-specific context: {e}")
+                        # Fallback: try simple keyword matching
+                        if self._is_content_relevant(question_text, content):
+                            truncated = content[:600]
+                            last_period = truncated.rfind('.')
+                            if last_period > 400:
+                                question_specific_contexts.append(content[:last_period + 1])
+                            else:
+                                question_specific_contexts.append(truncated + "...")
+            
+            # If no specific contexts found, provide a minimal fallback
+            if not question_specific_contexts:
+                # Create a minimal context from the first document
+                fallback_content = documents[0].page_content[:300] if documents else "General document content"
+                question_specific_contexts.append(f"Context for question analysis: {fallback_content}...")
             
             context = {
                 "question_id": question["id"],
-                "contexts": contexts
+                "context": " | ".join(question_specific_contexts[:2]),  # Combine top 2 relevant contexts
+                "question": question_text  # Include question for debugging
             }
             results.append(context)
         
         return results
+    
+    def _is_content_relevant(self, question: str, content: str) -> bool:
+        """Simple keyword-based relevance check"""
+        if not question or not content:
+            return False
+            
+        # Extract key terms from question (remove common words)
+        common_words = {'what', 'how', 'why', 'when', 'where', 'who', 'which', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+        question_words = set(word.lower().strip('?.,!') for word in question.split())
+        key_terms = question_words - common_words
+        
+        # Check if any key terms appear in content
+        content_lower = content.lower()
+        return any(term in content_lower for term in key_terms if len(term) > 2)
     
     def _generate_cache_key(self, documents: List[Document], settings: Optional[GenerationSettings]) -> str:
         """Generate cache key from documents and settings"""
