@@ -254,7 +254,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
             {filteredQuestions.length > 0 ? (
               <div className="space-y-6">
                 {filteredQuestions.map((qa, index) => (
-                  <div key={qa.id || index} className="border border-light-300 rounded-xl p-6 bg-light-50/50">
+                  <div key={`question-${qa.id}-${index}`} className="border border-light-300 rounded-xl p-6 bg-light-50/50">
                     {/* Question Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-2">
@@ -282,11 +282,11 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                       <button
                         onClick={() => copyToClipboard(
                           `Q: ${qa.question}\nA: ${qa.answer}${qa.context ? `\nContext: ${Array.isArray(qa.context) ? qa.context.join(', ') : qa.context}` : ''}`,
-                          qa.id || `qa-${index}`
+                          `qa-${qa.id}-${index}`
                         )}
                         className="text-primary-500 hover:text-primary-600 transition-colors"
                       >
-                        {copiedId === (qa.id || `qa-${index}`) ? (
+                        {copiedId === `qa-${qa.id}-${index}` ? (
                           <CheckCircle className="w-4 h-4 text-accent-emerald" />
                         ) : (
                           <Copy className="w-4 h-4" />
@@ -322,7 +322,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-1">
                             {qa.context.map((ctx, i) => (
-                              <li key={i} className="text-primary-600 bg-white/60 p-2 rounded border border-light-200 text-sm">
+                              <li key={`context-${qa.id}-${index}-${i}`} className="text-primary-600 bg-white/60 p-2 rounded border border-light-200 text-sm">
                                 • {ctx}
                               </li>
                             ))}
