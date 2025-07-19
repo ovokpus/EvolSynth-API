@@ -20,8 +20,7 @@ Make sure you have the EvolSynth backend running:
 
 ```bash
 # From project root
-cd api
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Backend should be available at: http://localhost:8000

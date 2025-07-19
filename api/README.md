@@ -56,11 +56,11 @@ REASONING_EVOLUTION_COUNT=2
 ### 3. Launch the API
 
 ```bash
-# Development mode
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# Development mode (run from project root)
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-# Production mode
-uvicorn main:app --host 0.0.0.0 --port 8000
+# Production mode (run from project root)
+uvicorn api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### 4. Explore the API
@@ -218,12 +218,11 @@ ENABLE_LLM_BATCHING=true
 #### 4. Start Optimized Backend
 
 ```bash
-# Development mode with optimizations
-cd api
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+# Development mode with optimizations (run from project root)
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-# Production mode
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+# Production mode (run from project root)
+gunicorn api.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
 ### 📈 Performance Monitoring
