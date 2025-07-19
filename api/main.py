@@ -540,6 +540,8 @@ if CACHE_AVAILABLE:
             cleared_docs = cache_manager.clear_prefix("docs")
             cleared_results = cache_manager.clear_prefix("results")
             cleared_sessions = cache_manager.clear_prefix("sessions")
+            cleared_evolsynth = cache_manager.clear_prefix("evolsynth")  # Clear service cache
+            cleared_generation = cache_manager.clear_prefix("generation")  # Clear API cache
             
             return {
                 "success": True,
@@ -547,7 +549,9 @@ if CACHE_AVAILABLE:
                     "documents": cleared_docs,
                     "results": cleared_results,
                     "sessions": cleared_sessions,
-                    "total": cleared_docs + cleared_results + cleared_sessions
+                    "evolsynth_service": cleared_evolsynth,
+                    "generation_api": cleared_generation,
+                    "total": cleared_docs + cleared_results + cleared_sessions + cleared_evolsynth + cleared_generation
                 },
                 "timestamp": datetime.now().isoformat(),
                 "cache_type": cache_manager.get_stats()["cache_type"]
