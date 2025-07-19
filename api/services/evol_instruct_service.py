@@ -946,8 +946,7 @@ class EvolInstructService:
         question_answers = []
         question_contexts = []
         
-        # Create document source mapping
-        doc_sources = {i: doc.metadata.get('source', f'Document {i+1}') for i, doc in enumerate(documents)}
+
         
         try:
             # Split into sections
@@ -1048,7 +1047,12 @@ class EvolInstructService:
             else:
                 return source
         
-        # Fallback to generic name with proper numbering
+        # If no source, try filename from metadata
+        filename = doc.metadata.get('filename', '')
+        if filename:
+            return filename
+            
+        # Last resort fallback
         return f"Document {doc_index + 1}"
     
     def _create_ai_summary(self, content: str, question: str, doc_source: str) -> str:
