@@ -655,8 +655,8 @@ class EvolInstructService:
             # Process each document to find question-relevant content
             for doc_index, doc in enumerate(documents[:3]):  # Check up to 3 documents for better coverage
                 content = doc.page_content
-                # Get document source information
-                doc_source = doc.metadata.get('source', f'Document {doc_index + 1}')
+                # Get proper document title (same as fast method)
+                doc_source = self._get_document_title(doc, doc_index)
                 
                 extracted_context_text = None
 
@@ -698,25 +698,27 @@ class EvolInstructService:
                             else:
                                 extracted_context_text = truncated + "..."
 
-                # If we found relevant context, add it with source information
+                # If we found relevant context, create AI summary
                 if extracted_context_text:
+                    ai_summary = self._create_ai_summary(extracted_context_text, question_text, doc_source)
                     context_with_source = {
-                        "text": extracted_context_text,
+                        "text": ai_summary,
                         "source": doc_source,
                         "document_index": doc_index
                     }
                     question_specific_contexts.append(context_with_source)
 
-            # If no specific contexts found, provide a minimal fallback
+            # If no specific contexts found, provide AI summary fallback
             if not question_specific_contexts:
-                # Create a minimal context from the first document
+                # Create AI summary from the first document
                 first_doc = documents[0] if documents else None
                 if first_doc:
-                    fallback_content = first_doc.page_content[:300]
-                    fallback_source = first_doc.metadata.get('source', 'Document 1')
+                    doc_title = self._get_document_title(first_doc, 0)
+                    fallback_content = first_doc.page_content[:800]
+                    ai_summary = self._create_ai_summary(fallback_content, question_text, doc_title)
                     question_specific_contexts.append({
-                        "text": f"Context for question analysis: {fallback_content}...",
-                        "source": fallback_source,
+                        "text": ai_summary,
+                        "source": doc_title,
                         "document_index": 0
                     })
                 else:

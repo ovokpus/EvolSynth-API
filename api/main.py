@@ -403,11 +403,13 @@ async def generate_synthetic_data(
          
         # Process generation using fast or standard method
         if request.fast_mode:
+            print(f"🚀 Using FAST mode for generation")
             result = await evol_instruct_service.generate_synthetic_data_fast(
                 documents=documents,
                 settings=request.settings
             )
         else:
+            print(f"🐌 Using STANDARD mode for generation")
             result = await evol_instruct_service.generate_synthetic_data_async(
                 documents=documents,
                 settings=request.settings
