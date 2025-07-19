@@ -4,8 +4,14 @@ Simple Redis Connection Test for EvolSynth
 Tests the containerized Redis connection and basic operations
 """
 
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 def test_redis_connection():
     """Test basic Redis connection and operations"""
