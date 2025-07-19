@@ -178,7 +178,7 @@ class EvolInstructService:
             for i, doc in enumerate(documents[:3])  # Limit to 3 docs for speed
         ])
 
-        # Single comprehensive prompt for ALL question types
+        # Single comprehensive prompt for questions and answers ONLY
         comprehensive_prompt = ChatPromptTemplate.from_template("""
         Based on the following documents, generate a comprehensive set of questions and answers for evaluation purposes.
 
@@ -190,34 +190,29 @@ class EvolInstructService:
         For each question, provide:
         1. The question text
         2. A clear, accurate answer
-        3. A brief context summary (1-2 sentences)
 
         Format your response as a structured list:
 
         SIMPLE QUESTIONS:
         Q1: [Question]
         A1: [Answer]
-        C1: [Context from {source}]
 
         Q2: [Question]
-        A2: [Answer] 
-        C2: [Context from {source}]
+        A2: [Answer]
 
         MULTI-CONTEXT QUESTIONS:
         Q3: [Question requiring multiple sources]
         A3: [Answer]
-        C3: [Context from {source}]
 
         REASONING QUESTIONS:
         Q4: [Question requiring analysis]
         A4: [Answer]
-        C4: [Context from {source}]
 
-        Keep answers concise but accurate. Context should identify the source document.
+        Keep answers concise but accurate. Focus on generating high-quality questions and answers.
         """)
 
         try:
-            # Single LLM call for everything
+            # Single LLM call for questions and answers ONLY
             llm = self.llm_pool[0]
             response = llm.invoke(comprehensive_prompt.format(
                 documents=combined_content,
@@ -229,17 +224,27 @@ class EvolInstructService:
 
             response_text = str(response.content) if hasattr(response, 'content') else str(response)
             
-            # Parse the structured response
-            evolved_questions, question_answers, question_contexts = self._parse_comprehensive_response(
+            # Parse questions and answers from LLM response
+            evolved_questions, question_answers, _ = self._parse_comprehensive_response(
                 response_text, documents
             )
+            
+            # Use FAST keyword-based context extraction (much better quality!)
+            print(f"🔍 DEBUG: About to extract contexts for {len(evolved_questions)} questions from {len(documents)} documents")
+            question_contexts = self._extract_contexts_fast(evolved_questions, documents)
+            print(f"🔍 DEBUG: Extracted {len(question_contexts)} context groups")
+            for i, ctx in enumerate(question_contexts[:3]):  # Show first 3 for debugging
+                print(f"🔍 DEBUG: Context {i+1}: question_id={ctx['question_id']}, contexts_count={len(ctx.get('contexts', []))}")
+                if ctx.get('contexts'):
+                    print(f"🔍 DEBUG: First context: {ctx['contexts'][0]['text'][:100]}... (source: {ctx['contexts'][0]['source']})")
 
         except Exception as e:
             print(f"Error in fast generation: {e}")
             # Fallback to minimal results
             evolved_questions = [{"id": "fallback_1", "question": "What are the main topics in these documents?", "evolution_type": "simple_evolution", "complexity_level": 2}]
             question_answers = [{"question_id": "fallback_1", "answer": "The documents discuss various topics that require further analysis."}]
-            question_contexts = [{"question_id": "fallback_1", "contexts": [{"text": "Content from uploaded documents", "source": "Multiple documents", "document_index": 0}]}]
+            # Use fast context extraction even for fallback
+            question_contexts = self._extract_contexts_fast(evolved_questions, documents)
 
         end_time = time.time()
         execution_time = end_time - start_time
@@ -914,8 +919,8 @@ class EvolInstructService:
                     current_section = 'reasoning'
                     continue
                 
-                # Parse Q/A/C patterns
-                if line.startswith(('Q', 'A', 'C')) and ':' in line:
+                # Parse Q/A patterns (no contexts - handled separately)
+                if line.startswith(('Q', 'A')) and ':' in line:
                     prefix = line[0]
                     content = line.split(':', 1)[1].strip()
                     
@@ -940,26 +945,6 @@ class EvolInstructService:
                             "question_id": last_question["id"],
                             "answer": content
                         })
-                        
-                    elif prefix == 'C' and evolved_questions:
-                        # Context for last question
-                        last_question = evolved_questions[-1]
-                        
-                        # Extract source if mentioned
-                        source = "Combined documents"
-                        for i, doc_source in doc_sources.items():
-                            if doc_source.lower() in content.lower():
-                                source = doc_source
-                                break
-                        
-                        question_contexts.append({
-                            "question_id": last_question["id"],
-                            "contexts": [{
-                                "text": content,
-                                "source": source,
-                                "document_index": 0
-                            }]
-                        })
             
             # Ensure we have at least some results
             if not evolved_questions:
@@ -975,14 +960,7 @@ class EvolInstructService:
                     "question_id": question_id,
                     "answer": response_text[:200] + "..." if len(response_text) > 200 else response_text
                 })
-                question_contexts.append({
-                    "question_id": question_id,
-                    "contexts": [{
-                        "text": f"Summary from {len(documents)} uploaded document(s)",
-                        "source": doc_sources.get(0, "Document 1"),
-                        "document_index": 0
-                    }]
-                })
+                # No contexts here - they'll be generated by _extract_contexts_fast()
                 
         except Exception as e:
             print(f"Error parsing comprehensive response: {e}")
@@ -998,13 +976,6 @@ class EvolInstructService:
                 "question_id": question_id,
                 "answer": "The documents contain information that requires analysis."
             }]
-            question_contexts = [{
-                "question_id": question_id,
-                "contexts": [{
-                    "text": "Content extracted from uploaded documents",
-                    "source": "Multiple sources",
-                    "document_index": 0
-                }]
-            }]
+            question_contexts = []  # Will be generated by _extract_contexts_fast()
         
         return evolved_questions, question_answers, question_contexts

@@ -134,18 +134,30 @@ class APIClient {
     const answerMap = new Map(answers.map(a => [a.question_id, a.answer]));
     const contextMap = new Map(contexts.map(c => [c.question_id, c.contexts]));
 
-    return questions.map(q => ({
-      id: q.id,
-      question: q.question,
-      answer: answerMap.get(q.id) || 'No answer available',
-      context: contextMap.get(q.id) || [],
-      level: this.mapEvolutionTypeToLevel(q.evolution_type),
-      metadata: {
-        complexity_level: q.complexity_level,
-        evolution_type: q.evolution_type,
-        source: q.id || 'unknown',
-      },
-    }));
+    // Debug logging
+    console.log('🔍 DEBUG Frontend: Converting backend data to display format');
+    console.log('🔍 DEBUG Frontend: Questions:', questions.length);
+    console.log('🔍 DEBUG Frontend: Answers:', answers.length);
+    console.log('🔍 DEBUG Frontend: Contexts:', contexts.length);
+    console.log('🔍 DEBUG Frontend: Context sample:', contexts.slice(0, 2));
+
+    return questions.map(q => {
+      const contextData = contextMap.get(q.id) || [];
+      console.log(`🔍 DEBUG Frontend: Question ${q.id} has ${Array.isArray(contextData) ? contextData.length : 'non-array'} contexts`);
+      
+      return {
+        id: q.id,
+        question: q.question,
+        answer: answerMap.get(q.id) || 'No answer available',
+        context: contextData,
+        level: this.mapEvolutionTypeToLevel(q.evolution_type),
+        metadata: {
+          complexity_level: q.complexity_level,
+          evolution_type: q.evolution_type,
+          source: q.id || 'unknown',
+        },
+      };
+    });
   }
 
   private mapEvolutionTypeToLevel(evolutionType: string): string {
