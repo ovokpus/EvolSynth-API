@@ -79,8 +79,24 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
       errors.push(`Estimated questions (${estimatedQuestions}) exceeds maximum limit (${settings.maxQuestions})`);
     }
 
-    if (totalCharacters > 100000) {
-      errors.push("Total document content exceeds 100,000 characters. Consider reducing document size.");
+    if (totalCharacters > 10000000) {
+      errors.push("Total document content exceeds 10,000,000 characters. Consider reducing document size.");
+    }
+    
+    // Debug logging
+    if (errors.length > 0) {
+      console.log('🚨 Validation Errors:', errors);
+      console.log('📊 Debug Info:', {
+        estimatedQuestions,
+        totalCharacters,
+        documentsCount: documents.length,
+        evolutionCounts: {
+          simple: settings.simpleEvolutionCount,
+          multiContext: settings.multiContextEvolutionCount,
+          reasoning: settings.reasoningEvolutionCount,
+          complex: settings.complexEvolutionCount
+        }
+      });
     }
     
     setValidationErrors(errors);

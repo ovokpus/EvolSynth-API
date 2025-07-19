@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, Clock, TrendingUp, Share } from "lucide-react";
 import { GenerationResults, ResultsDisplayProps, DisplayQuestion } from "@/types";
 import { getDisplayQuestions } from "@/services/api";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps) {
   const [activeTab, setActiveTab] = useState<'questions' | 'evaluation' | 'export' | 'insights'>('questions');
@@ -309,7 +310,9 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         <MessageSquare className="w-4 h-4" />
                         <span>Question</span>
                       </h4>
-                      <p className="text-primary-700 bg-white/60 p-3 rounded-lg border border-light-200">{qa.question}</p>
+                      <div className="bg-white/60 p-3 rounded-lg border border-light-200">
+                        <MarkdownRenderer content={qa.question} />
+                      </div>
                     </div>
 
                     {/* Answer */}
@@ -318,7 +321,9 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         <Lightbulb className="w-4 h-4" />
                         <span>Answer</span>
                       </h4>
-                      <p className="text-primary-700 bg-white/60 p-3 rounded-lg border border-light-200">{qa.answer}</p>
+                      <div className="bg-white/60 p-3 rounded-lg border border-light-200">
+                        <MarkdownRenderer content={qa.answer} />
+                      </div>
                     </div>
 
                     {/* Context */}
@@ -331,13 +336,15 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-1">
                             {qa.context.map((ctx, i) => (
-                              <li key={`context-${qa.id}-${index}-${i}`} className="text-primary-600 bg-white/60 p-2 rounded border border-light-200 text-sm">
-                                • {ctx}
+                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-white/60 p-2 rounded border border-light-200 text-sm">
+                                <MarkdownRenderer content={`• ${ctx}`} />
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-primary-600 bg-white/60 p-3 rounded-lg border border-light-200 text-sm">{qa.context}</p>
+                          <div className="bg-white/60 p-3 rounded-lg border border-light-200 text-sm">
+                            <MarkdownRenderer content={qa.context} />
+                          </div>
                         )}
                       </div>
                     )}
