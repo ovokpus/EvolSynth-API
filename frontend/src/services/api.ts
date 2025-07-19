@@ -118,7 +118,7 @@ class APIClient {
       metadata: {
         complexity_level: q.complexity_level,
         evolution_type: q.evolution_type,
-        source: q.source_context_ids.join(', '),
+        source: q.id || 'unknown',
       },
     }));
   }
@@ -150,9 +150,10 @@ class APIClient {
       performance_metrics: response.performance_metrics,
       evaluation,
       settings: originalSettings,
-      documentsProcessed: response.evolved_questions.reduce((acc, q) => {
-        return Math.max(acc, q.source_context_ids.length);
-      }, 0),
+      documentsProcessed: response.question_contexts.reduce((acc, qc) => {
+        const contextCount = Array.isArray(qc.contexts) ? qc.contexts.length : 1;
+        return Math.max(acc, contextCount);
+      }, 1),
       totalQuestions: response.evolved_questions.length,
       processingTime: response.performance_metrics.execution_time_seconds,
       timestamp: response.timestamp,

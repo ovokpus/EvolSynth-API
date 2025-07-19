@@ -15,7 +15,6 @@ export interface EvolvedQuestion {
   id: string;
   question: string;
   evolution_type: EvolutionType;
-  source_context_ids: string[];
   complexity_level: number; // 1-5
 }
 
