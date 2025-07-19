@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Zap, Settings, Brain, Clock, CheckCircle, AlertTriangle, Info, Calculator } from "lucide-react";
-import { UploadedDocument, GenerationResults, GenerationInterfaceProps, FrontendGenerationSettings } from "@/types";
+import { GenerationInterfaceProps, FrontendGenerationSettings } from "@/types";
 import { generateSyntheticData } from "@/services/api";
 
 export default function GenerationInterface({ documents, onComplete, onBack }: GenerationInterfaceProps) {
@@ -103,7 +103,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     }
     
     setValidationErrors(errors);
-  }, [settings, estimatedQuestions, totalCharacters]);
+  }, [settings, estimatedQuestions, totalCharacters, documents.length]);
 
   // Real generation process using FastAPI backend with realistic progress tracking
   const performRealGeneration = async () => {

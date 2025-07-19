@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, Clock, TrendingUp, Share } from "lucide-react";
-import { GenerationResults, ResultsDisplayProps, DisplayQuestion, EnhancedContext } from "@/types";
+import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, TrendingUp, Share } from "lucide-react";
+import { ResultsDisplayProps, DisplayQuestion, EnhancedContext } from "@/types";
 import { getDisplayQuestions } from "@/services/api";
 import MarkdownRenderer from "./MarkdownRenderer";
 

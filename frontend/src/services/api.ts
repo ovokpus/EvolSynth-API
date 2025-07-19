@@ -10,7 +10,6 @@ import {
   EvaluationResponse,
   HealthResponse,
   APIResponse,
-  APIError,
   DisplayQuestion,
   EvolvedQuestion,
   QuestionAnswer,
@@ -134,8 +133,15 @@ class APIClient {
     const answerMap = new Map(answers.map(a => [a.question_id, a.answer]));
     const contextMap = new Map(contexts.map(c => [c.question_id, c.contexts]));
 
+    // DEBUG: Log the raw context data
+    console.log("🔍 DEBUG - Raw backend contexts:", JSON.stringify(contexts, null, 2));
+    console.log("🔍 DEBUG - ContextMap:", Array.from(contextMap.entries()));
+
     return questions.map(q => {
       const contextData = contextMap.get(q.id) || [];
+      
+      // DEBUG: Log context for each question
+      console.log(`🔍 DEBUG - Question ${q.id} context:`, contextData);
       
       return {
         id: q.id,
@@ -172,6 +178,9 @@ class APIClient {
     evaluation?: EvaluationResponse,
     originalSettings?: FrontendGenerationSettings
   ): GenerationResults {
+    // DEBUG: Log the raw backend response
+    console.log("🔍 DEBUG - Raw backend response question_contexts:", JSON.stringify(response.question_contexts, null, 2));
+    
     return {
       success: response.success,
       generation_id: response.generation_id,
@@ -287,30 +296,9 @@ class APIClient {
         body: JSON.stringify(request),
       });
 
-      // If onProgress callback is provided and we have a generation_id, poll for progress
-      if (onProgress && generationResponse.success && generationResponse.data?.generation_id) {
-        const generationId = generationResponse.data.generation_id;
-        
-        // Start polling for progress (optional feature for future use)
-        const pollProgress = async () => {
-          try {
-            const statusResponse = await this.checkGenerationStatus(generationId);
-            if (statusResponse.success && statusResponse.data) {
-              const { progress, current_stage, status } = statusResponse.data;
-              onProgress(Math.round(progress * 100), current_stage);
-              
-              // Continue polling if not completed
-              if (status === 'running' && progress < 1.0) {
-                setTimeout(pollProgress, 1000); // Poll every second
-              }
-            }
-          } catch (error) {
-            logger.warn('Progress polling failed', error);
-          }
-        };
-        
-        // Note: This is disabled for now since the current backend returns immediately
-        // pollProgress();
+      // If onProgress callback is provided, report completion since backend returns immediately
+      if (onProgress && generationResponse.success) {
+        onProgress(100, 'completed');
       }
 
       if (!generationResponse.success || !generationResponse.data) {
@@ -354,6 +342,9 @@ class APIClient {
         evaluationResponse,
         settings
       );
+      
+      // DEBUG: Log final frontend results
+      console.log("🔍 DEBUG - Final frontend results question_contexts:", JSON.stringify(frontendResults.question_contexts, null, 2));
 
       return {
         success: true,

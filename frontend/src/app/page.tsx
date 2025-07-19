@@ -7,11 +7,11 @@ import HeroSection from "@/components/HeroSection";
 import DocumentUpload from "@/components/DocumentUpload";
 import GenerationInterface from "@/components/GenerationInterface";
 import ResultsDisplay from "@/components/ResultsDisplay";
-import { DocumentInput, GenerationResults, GenerationStep } from "@/types";
+import { UploadedDocument, GenerationResults, GenerationStep } from "@/types";
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<GenerationStep>('upload');
-  const [documents, setDocuments] = useState<DocumentInput[]>([]);
+  const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [generationResults, setGenerationResults] = useState<GenerationResults | null>(null);
 
   const features = [

@@ -210,6 +210,8 @@ export interface APIResponse<T> {
 
 export type GenerationStatus = "idle" | "uploading" | "processing" | "generating" | "evaluating" | "completed" | "error";
 
+export type GenerationStep = "upload" | "generate" | "results";
+
 // =============================================================================
 // HELPER FUNCTIONS TYPES
 // =============================================================================

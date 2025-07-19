@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, Menu, X, Github, ExternalLink } from "lucide-react";
+import { Brain, Menu, X, ExternalLink } from "lucide-react";
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
