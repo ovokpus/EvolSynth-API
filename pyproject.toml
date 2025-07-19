@@ -20,5 +20,10 @@ dependencies = [
     "fastapi>=0.115.0",
     "fastjsonschema==2.21.1",
     "pydantic-ai>=0.1.1",
-    "uvicorn>=0.32.0",
+    "uvicorn[standard]>=0.32.0",
+    "redis>=6.2.0",
+    "celery>=5.5.3",
+    "aiohttp>=3.12.14",
+    "asyncio-throttle>=1.0.2",
+    "gunicorn>=23.0.0",
 ]
