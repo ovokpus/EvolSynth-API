@@ -498,13 +498,43 @@ class EvolInstructService:
         return cleaned_text
     
     def _extract_contexts_sync(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
-        """Synchronous context extraction"""
+        """Synchronous context extraction with smart truncation"""
         results = []
         
         for question in questions:
+            # Extract contexts with smart truncation at sentence boundaries
+            smart_contexts = []
+            for doc in documents[:3]:  # Include up to 3 documents instead of 2
+                content = doc.page_content
+                
+                # If content is longer than configured max, find a good break point
+                max_length = getattr(settings, 'context_max_length', 1500)
+                if len(content) > max_length:
+                    # Try to break at sentence boundary within 80%-100% of max length
+                    truncated = content[:max_length]
+                    last_sentence_end = max(
+                        truncated.rfind('.'), 
+                        truncated.rfind('!'), 
+                        truncated.rfind('?')
+                    )
+                    
+                    min_length = int(max_length * 0.8)  # 80% of max length
+                    if last_sentence_end > min_length:  # If we found a good sentence boundary
+                        content = content[:last_sentence_end + 1]
+                    else:
+                        # Fall back to word boundary to avoid cutting mid-word
+                        truncated = content[:int(max_length * 0.93)]  # 93% of max length
+                        last_space = truncated.rfind(' ')
+                        if last_space > min_length:
+                            content = content[:last_space] + "..."
+                        else:
+                            content = truncated + "..."
+                
+                smart_contexts.append(content)
+            
             context = {
                 "question_id": question["id"],
-                "contexts": [doc.page_content[:500] for doc in documents[:2]]
+                "contexts": smart_contexts
             }
             results.append(context)
         

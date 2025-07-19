@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     chunk_size: int = 1000
     chunk_overlap: int = 50
     max_content_length: int = 2000
+    context_max_length: int = 1500  # Maximum context length before smart truncation
     
     # Performance Configuration
     max_concurrency: int = 3
