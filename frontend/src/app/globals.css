@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* Force light theme with dark purple text - override everything */
+* {
+  color-scheme: light !important;
+  color: #7c3aed !important;
+}
+
+html {
+  background-color: #ffffff !important;
+  color: #7c3aed !important;
+}
+
+body {
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 30%, #f3e8ff 100%) !important;
+  color: #7c3aed !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  min-height: 100vh !important;
+}
+
+/* All text elements should be dark purple */
+h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+  color: #7c3aed !important;
+}
+
+/* Button styling - dark purple background with white text */
+button {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* Force white text in buttons and their children */
+button, button *, button span, button svg {
+  color: #ffffff !important;
+}
+
+/* Override for specific button types */
+button.bg-primary-700, button.bg-primary-600, button.bg-primary-500 {
+  color: #ffffff !important;
+}
+
+button.bg-primary-700 *, button.bg-primary-600 *, button.bg-primary-500 * {
+  color: #ffffff !important;
+}
+
+/* White buttons should have purple text */
+button.bg-white, button[class*="bg-white"] {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: #7c3aed !important;
+}
+
+button.bg-white *, button[class*="bg-white"] * {
+  color: #7c3aed !important;
+}
+
+/* Input and form elements */
+input, textarea, select {
+  color: #7c3aed !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+}
+
+:root {
+  --background: #ffffff !important;
+  --foreground: #7c3aed !important;
+  --primary: #7c3aed !important;
+  --primary-foreground: #ffffff !important;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+/* Override any dark mode media queries */
+@media (prefers-color-scheme: dark) {
+  * {
+    color-scheme: light !important;
+    color: #7c3aed !important;
+  }
+  
+  html {
+    background-color: #ffffff !important;
+    color: #7c3aed !important;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #ffffff 0%, #faf5ff 30%, #f3e8ff 100%) !important;
+    color: #7c3aed !important;
+  }
+
+  h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+    color: #7c3aed !important;
+  }
+
+  button {
+    background-color: #7c3aed !important;
+    color: #ffffff !important;
+  }
+
+  button, button *, button span, button svg {
+    color: #ffffff !important;
+  }
+}
