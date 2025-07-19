@@ -156,6 +156,22 @@ async def startup_event():
         if CACHE_AVAILABLE:
             cache_stats = cache_manager.get_stats()
             print(f"✅ Cache system: {cache_stats['cache_type']} (enabled: {cache_stats['cache_enabled']})")
+            
+            # Clear cache on startup to ensure fresh deployment
+            try:
+                cleared_docs = cache_manager.clear_prefix("docs")
+                cleared_results = cache_manager.clear_prefix("results")
+                cleared_sessions = cache_manager.clear_prefix("sessions")
+                cleared_evolsynth = cache_manager.clear_prefix("evolsynth")
+                cleared_generation = cache_manager.clear_prefix("generation")
+                total_cleared = cleared_docs + cleared_results + cleared_sessions + cleared_evolsynth + cleared_generation
+                
+                if total_cleared > 0:
+                    print(f"🧹 Deployment cache clear: {total_cleared} entries removed")
+                else:
+                    print("🧹 Deployment cache clear: No entries to remove")
+            except Exception as cache_error:
+                print(f"⚠️  Cache clear failed on startup: {cache_error}")
         else:
             print("⚠️  Cache system not available")
         
