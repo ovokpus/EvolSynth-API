@@ -32,55 +32,9 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 # Copy application code
 COPY api/ ./api/
 
-# Create startup script optimized for Railway
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "🚀 Starting EvolSynth API on Railway"\n\
-echo "Port: ${PORT}"\n\
-echo "Environment: ${ENVIRONMENT}"\n\
-echo "Redis: ${REDIS_HOST:-localhost}:${REDIS_PORT:-6379}"\n\
-\n\
-# Railway-optimized startup\n\
-if [ "${ENVIRONMENT}" = "production" ]; then\n\
-    echo "🔧 Starting with Gunicorn for Railway"\n\
-    exec gunicorn api.main:app \\\n\
-        --worker-class uvicorn.workers.UvicornWorker \\\n\
-        --workers ${WORKERS:-2} \\\n\
-        --bind 0.0.0.0:${PORT} \\\n\
-        --timeout ${REQUEST_TIMEOUT:-120} \\\n\
-        --keepalive 2 \\\n\
-        --max-requests 500 \\\n\
-        --max-requests-jitter 50 \\\n\
-        --access-logfile - \\\n\
-        --error-logfile - \\\n\
-        --log-level info \\\n\
-        --preload\n\
-else\n\
-    echo "🔧 Starting with Uvicorn for Railway"\n\
-    exec uvicorn api.main:app \\\n\
-        --host 0.0.0.0 \\\n\
-        --port ${PORT} \\\n\
-        --log-level info\n\
-fi' > start.sh && chmod +x start.sh
-
-# Create Railway health check
-RUN echo '#!/usr/bin/env python3\n\
-import requests\n\
-import sys\n\
-import os\n\
-\n\
-try:\n\
-    port = os.getenv("PORT", "8000")\n\
-    response = requests.get(f"http://localhost:{port}/health", timeout=10)\n\
-    if response.status_code == 200 and response.json().get("status") == "healthy":\n\
-        print("✅ Railway health check passed")\n\
-        sys.exit(0)\n\
-    else:\n\
-        print(f"❌ Railway health check failed: {response.status_code}")\n\
-        sys.exit(1)\n\
-except Exception as e:\n\
-    print(f"❌ Railway health check error: {e}")\n\
-    sys.exit(1)' > health_check.py && chmod +x health_check.py
+# Copy startup and health check scripts
+COPY deploy/start.sh deploy/health_check.py ./
+RUN chmod +x start.sh health_check.py
 
 # Expose port for Railway
 EXPOSE $PORT

@@ -46,6 +46,13 @@ WORKERS=2
 3. **Timeout**: Railway first deploy takes 5-10 minutes
 
 ## 📚 Full Guide
-See `RAILWAY_DEPLOYMENT.md` for comprehensive deployment guide.
+See `deploy/RAILWAY_DEPLOYMENT.md` for comprehensive deployment guide.
+
+## 📁 Deploy Folder
+All Railway deployment files are now organized in the `deploy/` folder:
+- `railway.toml` - Railway configuration  
+- `start.sh` - Startup script
+- `health_check.py` - Health monitoring
+- Documentation and examples
 
 **That's it! Your API should be live on Railway! 🎉** 
