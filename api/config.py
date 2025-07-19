@@ -32,11 +32,11 @@ class Settings(BaseSettings):
     temperature: float = 0.7
     max_tokens: int = 500
     
-    # Evolution Configuration
-    max_base_questions_per_doc: int = 3
-    simple_evolution_count: int = 3
-    multi_context_evolution_count: int = 2
-    reasoning_evolution_count: int = 2
+    # Evolution Configuration (optimized for speed)
+    max_base_questions_per_doc: int = 2  # Reduced from 3 to 2
+    simple_evolution_count: int = 2  # Reduced from 3 to 2
+    multi_context_evolution_count: int = 1  # Reduced from 2 to 1
+    reasoning_evolution_count: int = 1  # Reduced from 2 to 1
     complex_evolution_count: int = 1
     
     # Document Processing
@@ -47,9 +47,11 @@ class Settings(BaseSettings):
     context_max_length: int = 1500  # Maximum context length before smart truncation
     
     # Performance Configuration
-    max_concurrency: int = 3
+    max_concurrency: int = 8  # Increased from 3 to 8 for better parallelism
     request_timeout: int = 300  # 5 minutes
     max_documents_per_request: int = 10
+    llm_request_timeout: int = 30  # Faster LLM timeouts
+    batch_size: int = 8  # Increased from 5 to 8 for better batching
     
     # Execution Modes
     default_execution_mode: str = "concurrent"  # "concurrent" or "sequential"

@@ -326,27 +326,42 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                       </div>
                     </div>
 
-                    {/* Context */}
+                    {/* Context Summary */}
                     {qa.context && (
                       <div>
                         <h4 className="font-medium text-primary-700 mb-2 flex items-center space-x-2">
                           <FileText className="w-4 h-4" />
-                          <span>Context</span>
+                          <span>Context Summary</span>
+                          <span className="text-xs text-primary-500 bg-primary-100 px-2 py-0.5 rounded-full">AI Summarized</span>
                         </h4>
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-2">
                             {qa.context.map((ctx, i) => (
-                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-white/60 p-3 rounded-lg border border-light-200 text-sm shadow-sm">
+                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
                                 <div className="flex items-start space-x-2">
-                                  <div className="w-1.5 h-1.5 bg-primary-400 rounded-full mt-2 flex-shrink-0"></div>
-                                  <MarkdownRenderer content={ctx} enhanceFormatting={true} />
+                                  <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                                  <div className="text-xs text-primary-600 leading-relaxed">
+                                    <MarkdownRenderer 
+                                      content={ctx} 
+                                      contentType="general"
+                                      enhanceFormatting={true}
+                                      className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
+                                    />
+                                  </div>
                                 </div>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <div className="bg-white/60 p-4 rounded-lg border border-light-200 text-sm shadow-sm">
-                            <MarkdownRenderer content={qa.context} enhanceFormatting={true} />
+                          <div className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
+                            <div className="text-xs text-primary-600 leading-relaxed">
+                              <MarkdownRenderer 
+                                content={qa.context} 
+                                contentType="general"
+                                enhanceFormatting={true}
+                                className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>

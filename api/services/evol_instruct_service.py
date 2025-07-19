@@ -35,18 +35,19 @@ class EvolInstructService:
         # Thread pool for CPU-bound tasks
         self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrency)
         
-        # Batch settings
-        self.batch_size = 5
-        self.batch_timeout = 2.0  # seconds
+        # Optimized batch settings from config
+        self.batch_size = getattr(settings, 'batch_size', 8)
+        self.batch_timeout = 1.5  # Reduced timeout for faster processing
         
     def _create_llm_pool(self):
-        """Create connection pool for LLM calls"""
+        """Create optimized connection pool for LLM calls"""
         return [
             ChatOpenAI(
                 model=settings.default_model,
                 temperature=settings.temperature,
                 max_retries=2,
-                request_timeout=30
+                request_timeout=getattr(settings, 'llm_request_timeout', 30),
+                max_tokens=400  # Reduced from 500 for faster responses
             ) 
             for _ in range(settings.max_concurrency)
         ]
@@ -170,19 +171,23 @@ class EvolInstructService:
     
     async def _simple_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Apply simple evolution using batched processing"""
-        return await self._evolution_batch(base_questions, documents, "simple_evolution", settings.simple_evolution_count)
+        count = min(len(base_questions), settings.simple_evolution_count)  # Don't exceed available questions
+        return await self._evolution_batch(base_questions[:count], documents, "simple_evolution", count)
     
     async def _multi_context_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Apply multi-context evolution using batched processing"""
-        return await self._evolution_batch(base_questions, documents, "multi_context_evolution", settings.multi_context_evolution_count)
+        count = min(len(base_questions), settings.multi_context_evolution_count)
+        return await self._evolution_batch(base_questions[:count], documents, "multi_context_evolution", count)
     
     async def _reasoning_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Apply reasoning evolution using batched processing"""
-        return await self._evolution_batch(base_questions, documents, "reasoning_evolution", settings.reasoning_evolution_count)
+        count = min(len(base_questions), settings.reasoning_evolution_count)
+        return await self._evolution_batch(base_questions[:count], documents, "reasoning_evolution", count)
     
     async def _complex_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Apply complex meta-cognitive evolution using batched processing"""
-        return await self._evolution_batch(base_questions, documents, "complex_evolution", settings.complex_evolution_count)
+        count = min(len(base_questions), settings.complex_evolution_count)
+        return await self._evolution_batch(base_questions[:count], documents, "complex_evolution", count)
     
     async def _evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document], evolution_type: str, count: int) -> List[Dict[str, Any]]:
         """Generic batched evolution processing"""
@@ -392,8 +397,8 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
-        # Create context from documents
-        document_context = "\n\n".join([doc.page_content[:1000] for doc in documents[:3]])
+        # Create optimized context from documents (reduced processing)
+        document_context = "\n\n".join([doc.page_content[:800] for doc in documents[:2]])
         
         answer_prompt = ChatPromptTemplate.from_template("""
                         Based on the following context, provide a clear and accurate answer to the question:
@@ -498,43 +503,52 @@ class EvolInstructService:
         return cleaned_text
     
     def _extract_contexts_sync(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
-        """Synchronous context extraction with smart truncation"""
+        """Intelligent context extraction with LLM summarization"""
         results = []
+        llm = self.llm_pool[0]  # Get LLM from pool
+        
+        # Create summarization prompt
+        summarization_prompt = ChatPromptTemplate.from_template("""
+        Summarize the following document content in 2-3 sentences, focusing on the key information relevant to question answering:
+
+        Document: {content}
+
+        Summary:""")
         
         for question in questions:
-            # Extract contexts with smart truncation at sentence boundaries
-            smart_contexts = []
-            for doc in documents[:3]:  # Include up to 3 documents instead of 2
+            contexts = []
+            question_text = question.get('question', '')
+            
+            for doc in documents[:2]:  # Process up to 2 documents
                 content = doc.page_content
                 
-                # If content is longer than configured max, find a good break point
-                max_length = getattr(settings, 'context_max_length', 1500)
-                if len(content) > max_length:
-                    # Try to break at sentence boundary within 80%-100% of max length
-                    truncated = content[:max_length]
-                    last_sentence_end = max(
-                        truncated.rfind('.'), 
-                        truncated.rfind('!'), 
-                        truncated.rfind('?')
-                    )
-                    
-                    min_length = int(max_length * 0.8)  # 80% of max length
-                    if last_sentence_end > min_length:  # If we found a good sentence boundary
-                        content = content[:last_sentence_end + 1]
-                    else:
-                        # Fall back to word boundary to avoid cutting mid-word
-                        truncated = content[:int(max_length * 0.93)]  # 93% of max length
-                        last_space = truncated.rfind(' ')
-                        if last_space > min_length:
-                            content = content[:last_space] + "..."
+                # If content is short enough, use as-is
+                if len(content) <= 400:
+                    contexts.append(content)
+                else:
+                    try:
+                        # Use LLM to create focused summary
+                        response = llm.invoke(summarization_prompt.format(content=content[:2000]))
+                        summary = response.content.strip() if hasattr(response, 'content') else str(response).strip()
+                        
+                        # Clean up any boilerplate from summary
+                        summary = self._clean_boilerplate(summary)
+                        
+                        contexts.append(summary)
+                        
+                    except Exception as e:
+                        print(f"Error summarizing context: {e}")
+                        # Fallback to simple truncation if summarization fails
+                        truncated = content[:600]
+                        last_period = truncated.rfind('.')
+                        if last_period > 400:
+                            contexts.append(content[:last_period + 1])
                         else:
-                            content = truncated + "..."
-                
-                smart_contexts.append(content)
+                            contexts.append(truncated + "...")
             
             context = {
                 "question_id": question["id"],
-                "contexts": smart_contexts
+                "contexts": contexts
             }
             results.append(context)
         
