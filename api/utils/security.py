@@ -342,9 +342,17 @@ def configure_cors(app, allowed_origins: Optional[List[str]] = None) -> None:
     """Configure CORS middleware with security best practices"""
     if allowed_origins is None:
         if settings.debug:
-            allowed_origins = ["*"]
+            # Development: Allow common development origins
+            allowed_origins = [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000", 
+                "http://localhost:3001",
+                "http://127.0.0.1:3001",
+                "http://localhost:8000",
+                "http://127.0.0.1:8000"
+            ]
         else:
-            # In production, specify exact origins
+            # Production: Specify exact origins
             allowed_origins = [
                 "https://yourdomain.com",
                 "https://www.yourdomain.com",

@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 import tempfile
 import os
+from pathlib import Path
 
 # Performance imports
 try:
@@ -393,36 +394,47 @@ async def generate_synthetic_data(
             "documents_count": len(request.documents)
         }
         
-                 # Convert DocumentInput objects to Document objects for service
-         from langchain_core.documents import Document
-         documents = [
-             Document(page_content=doc.content, metadata=doc.metadata or {})
-             for doc in request.documents
-         ]
+        # Convert DocumentInput objects to Document objects for service
+        from langchain_core.documents import Document
+        documents = [
+            Document(page_content=doc.content, metadata=doc.metadata or {})
+            for doc in request.documents
+        ]
          
-         # Process generation using the appropriate method
-         result = evol_instruct_service.generate_synthetic_data(
-             documents=documents,
-             settings=request.settings,
-             max_iterations=request.max_iterations
-         )
+        # Process generation using fast or standard method
+        if request.fast_mode:
+            result = await evol_instruct_service.generate_synthetic_data_fast(
+                documents=documents,
+                settings=request.settings
+            )
+        else:
+            result = await evol_instruct_service.generate_synthetic_data_async(
+                documents=documents,
+                settings=request.settings
+            )
         
-        # Add metadata
+        # Add metadata to match GenerationResponse model
         execution_time = time.time() - start_time
+        evolved_questions = result.get("evolved_questions", [])
+        question_answers = result.get("question_answers", [])
+        question_contexts = result.get("question_contexts", [])
+        
         result_with_metadata = {
-            **result,
-            "request_id": request_id,
+            "success": True,
+            "evolved_questions": evolved_questions,
+            "question_answers": question_answers,
+            "question_contexts": question_contexts,
             "performance_metrics": {
                 "execution_time_seconds": round(execution_time, 2),
-                "questions_generated": len(result.get("evolved_questions", [])),
+                "questions_generated": len(evolved_questions),
+                "answers_generated": len(question_answers),
+                "contexts_extracted": len(question_contexts),
+                "questions_per_second": len(evolved_questions) / execution_time if execution_time > 0 else 0,
                 "execution_mode": getattr(request.settings, 'execution_mode', 'concurrent') if request.settings else 'concurrent'
             },
-            "metadata": {
-                "generation_timestamp": datetime.now().isoformat(),
-                "model_used": settings.default_model,
-                "total_documents_processed": len(request.documents),
-                "cache_hit": False
-            }
+            "generation_id": request_id,
+            "timestamp": datetime.now(),
+            "cache_hit": False
         }
         
         # Cache result
@@ -451,6 +463,60 @@ async def generate_synthetic_data(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Generation failed: {str(e)}"
+        )
+
+
+@app.post(
+    "/evaluate",
+    response_model=EvaluationResponse,
+    tags=["Evaluation"],
+    summary="Evaluate Synthetic Data Quality",
+    description="""
+    Evaluate the quality of generated synthetic data using LLM-as-judge methodology.
+    
+    This endpoint analyzes evolved questions, answers, and contexts to provide
+    comprehensive quality metrics and scoring.
+    
+    **Features:**
+    - Question quality assessment (clarity, specificity, educational value)
+    - Answer accuracy evaluation (correctness, completeness, relevance)
+    - Evolution effectiveness scoring (complexity achievement for evolution type)
+    - Detailed per-question metrics and overall scores
+    
+    **Performance:**
+    - Typical response time: 5-15 seconds depending on question count
+    - Supports evaluation of up to 50 questions per request
+    - Quality scores capped at 95% maximum for realistic assessment
+    """,
+    responses={
+        200: {"description": "Successfully evaluated synthetic data quality"},
+        422: {"$ref": "#/components/responses/ValidationError"},
+        500: {"$ref": "#/components/responses/InternalServerError"}
+    }
+)
+async def evaluate_synthetic_data(request: EvaluationRequest):
+    """Evaluate the quality of generated synthetic data"""
+    try:
+        if not evaluation_service:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Evaluation service not initialized"
+            )
+        
+        # Perform evaluation
+        result = evaluation_service.evaluate_synthetic_data(
+            evolved_questions=request.evolved_questions,
+            question_answers=request.question_answers,
+            question_contexts=request.question_contexts,
+            evaluation_metrics=request.evaluation_metrics
+        )
+        
+        return EvaluationResponse(**result)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Evaluation failed: {str(e)}"
         )
 
 
@@ -542,6 +608,139 @@ if PERFORMANCE_MONITORING_AVAILABLE:
             )
 
 
+# Document processing endpoints
+@app.post(
+    "/upload/extract-content",
+    tags=["Documents"],
+    summary="Extract Content from Uploaded File",
+    description="Upload a file and extract its text content for processing",
+    responses={
+        200: {
+            "description": "File content extracted successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "filename": "document.pdf",
+                        "content": "Extracted text content...",
+                        "metadata": {
+                            "file_size": 15432,
+                            "file_type": "application/pdf",
+                            "pages_or_chunks": 3,
+                            "content_length": 2847
+                        }
+                    }
+                }
+            }
+        },
+        400: {"description": "Invalid file or extraction failed"},
+        413: {"description": "File too large"},
+        500: {"description": "Content extraction error"}
+    }
+)
+async def extract_file_content(file: UploadFile = File(...)):
+    """Extract text content from uploaded file"""
+    if not document_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Document service not initialized"
+        )
+    
+    # Validate file size (10MB limit)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    
+    # Read file content
+    try:
+        file_content = await file.read()
+        file_size = len(file_content)
+        
+        if file_size > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File size ({file_size} bytes) exceeds 10MB limit"
+            )
+        
+        # Validate file type
+        allowed_types = {'application/pdf', 'text/plain', 'text/markdown'}
+        allowed_extensions = {'.pdf', '.txt', '.md'}
+        
+        file_extension = Path(file.filename or '').suffix.lower()
+        
+        if file.content_type not in allowed_types and file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported file type: {file.content_type}. Allowed: PDF, TXT, MD"
+            )
+        
+        # Extract content based on file type
+        extracted_content = ""
+        pages_or_chunks = 1
+        
+        if file.content_type == 'application/pdf' or file_extension == '.pdf':
+            # Save file temporarily for PDF processing
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                temp_file.write(file_content)
+                temp_path = temp_file.name
+            
+            try:
+                # Use document service to load PDF
+                documents = document_service.load_documents_from_files([temp_path])
+                
+                if documents:
+                    extracted_content = "\n\n".join([doc.page_content for doc in documents])
+                    pages_or_chunks = len(documents)
+                else:
+                    extracted_content = f"[PDF File: {file.filename}] - Content extraction failed"
+                    
+            except Exception as e:
+                print(f"PDF extraction error: {e}")
+                extracted_content = f"[PDF File: {file.filename}] - Error extracting content: {str(e)}"
+            finally:
+                # Clean up temp file
+                try:
+                    os.unlink(temp_path)
+                except:
+                    pass
+                    
+        elif file.content_type in ['text/plain', 'text/markdown'] or file_extension in ['.txt', '.md']:
+            # Handle text files
+            try:
+                extracted_content = file_content.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    extracted_content = file_content.decode('latin-1')
+                except:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Could not decode text file. Please ensure it's valid UTF-8 or Latin-1"
+                    )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported file type for content extraction"
+            )
+        
+        return {
+            "success": True,
+            "filename": file.filename or "unknown",
+            "content": extracted_content,
+            "metadata": {
+                "file_size": file_size,
+                "file_type": file.content_type or "unknown",
+                "pages_or_chunks": pages_or_chunks,
+                "content_length": len(extracted_content)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"File processing failed: {str(e)}"
+        )
+
+
 # Enhanced utility endpoints
 @app.get(
     "/documents/sample",
@@ -576,23 +775,23 @@ async def get_sample_documents():
             detail="Document service not initialized"
         )
     
-         sample_docs = document_service.create_sample_documents()
+    sample_docs = document_service.create_sample_documents()
+    
+    # Convert LangChain Documents to API format
+    sample_documents = [
+        {
+            "content": doc.page_content,
+            "metadata": doc.metadata,
+            "source": doc.metadata.get("source", "sample.txt")
+        }
+        for doc in sample_docs
+    ]
      
-     # Convert LangChain Documents to API format
-     sample_documents = [
-         {
-             "content": doc.page_content,
-             "metadata": doc.metadata,
-             "source": doc.metadata.get("source", "sample.txt")
-         }
-         for doc in sample_docs
-     ]
-     
-     return {
-         "documents": sample_documents,
-         "count": len(sample_documents),
-         "description": "Sample documents for testing EvolSynth API"
-     }
+    return {
+        "documents": sample_documents,
+        "count": len(sample_documents),
+        "description": "Sample documents for testing EvolSynth API"
+    }
 
 
 @app.get(

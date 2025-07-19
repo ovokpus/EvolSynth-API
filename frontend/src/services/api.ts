@@ -273,6 +273,8 @@ class APIClient {
         documents: backendDocuments,
         settings: backendSettings,
         max_iterations: 1,
+        fast_mode: settings.fastMode,  // Enable ultra-fast generation if selected
+        skip_evaluation: !settings.evaluationEnabled,  // Skip evaluation if disabled
       };
 
       // Call generation endpoint

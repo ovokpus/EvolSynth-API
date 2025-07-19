@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, Clock, TrendingUp, Share } from "lucide-react";
-import { GenerationResults, ResultsDisplayProps, DisplayQuestion } from "@/types";
+import { GenerationResults, ResultsDisplayProps, DisplayQuestion, EnhancedContext } from "@/types";
 import { getDisplayQuestions } from "@/services/api";
 import MarkdownRenderer from "./MarkdownRenderer";
 
@@ -180,7 +180,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
           </div>
         </div>
         <div className="bg-white/80 rounded-xl p-4 border border-light-300 text-center shadow-light-lg">
-          <div className="text-2xl font-bold text-primary-700">{results.documents?.length || results.documentsProcessed || 0}</div>
+          <div className="text-2xl font-bold text-primary-700">{results.documentsProcessed || 0}</div>
           <div className="text-sm text-primary-600">Documents Processed</div>
           <div className="text-xs text-light-500 mt-1">Input sources analyzed</div>
         </div>
@@ -336,27 +336,43 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         </h4>
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-2">
-                            {qa.context.map((ctx, i) => (
-                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
-                                <div className="flex items-start space-x-2">
-                                  <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                                  <div className="text-xs text-primary-600 leading-relaxed">
-                                    <MarkdownRenderer 
-                                      content={ctx} 
-                                      contentType="general"
-                                      enhanceFormatting={true}
-                                      className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
-                                    />
+                            {qa.context.map((ctx, i) => {
+                              // Handle both string and enhanced context formats
+                              const isEnhancedContext = typeof ctx === 'object' && ctx !== null && 'text' in ctx;
+                              const contextText = isEnhancedContext ? (ctx as EnhancedContext).text : (ctx as string);
+                              const contextSource = isEnhancedContext ? (ctx as EnhancedContext).source : null;
+                              
+                              return (
+                                <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
+                                  <div className="flex items-start space-x-2">
+                                    <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    <div className="flex-1">
+                                      {contextSource && (
+                                        <div className="flex items-center space-x-1 mb-1">
+                                          <span className="text-xs text-primary-500 bg-primary-200/50 px-2 py-0.5 rounded-full font-medium">
+                                            📄 {contextSource}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div className="text-xs text-primary-600 leading-relaxed">
+                                        <MarkdownRenderer 
+                                          content={contextText} 
+                                          contentType="general"
+                                          enhanceFormatting={true}
+                                          className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </li>
-                            ))}
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : (
                           <div className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
                             <div className="text-xs text-primary-600 leading-relaxed">
                               <MarkdownRenderer 
-                                content={qa.context} 
+                                content={qa.context as string} 
                                 contentType="general"
                                 enhanceFormatting={true}
                                 className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
@@ -450,7 +466,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                   <div className="flex justify-between items-center">
                     <span className="text-primary-600">Questions/Second</span>
                     <span className="text-primary-700 font-medium">
-                      {((results.questions?.length || 0) / (results.processingTime || 1)).toFixed(1)}
+                      {((results.evolved_questions?.length || 0) / (results.processingTime || 1)).toFixed(1)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -534,12 +550,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
               <div className="bg-light-100/50 p-4 rounded-lg border border-light-200">
                 <h4 className="font-medium text-primary-700 mb-2">Export Statistics</h4>
                 <div className="text-sm text-primary-600 space-y-1">
-                  <div>Total Questions: {results.questions?.length || 0}</div>
+                  <div>Total Questions: {results.evolved_questions?.length || 0}</div>
                   <div>Estimated File Sizes:</div>
                   <div className="ml-4">
                     <div>• JSON: ~{Math.round((JSON.stringify(results).length / 1024) * 1.2)}KB</div>
-                    <div>• CSV: ~{Math.round((results.questions?.length || 0) * 0.5)}KB</div>
-                    <div>• TXT: ~{Math.round((results.questions?.length || 0) * 1.0)}KB</div>
+                    <div>• CSV: ~{Math.round((results.evolved_questions?.length || 0) * 0.5)}KB</div>
+                    <div>• TXT: ~{Math.round((results.evolved_questions?.length || 0) * 1.0)}KB</div>
                   </div>
                 </div>
               </div>
