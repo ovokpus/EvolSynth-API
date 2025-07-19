@@ -9,8 +9,7 @@ export default function Navigation() {
   const navItems = [
     { name: "Home", href: "#home" },
     { name: "Features", href: "#features" },
-    { name: "API Docs", href: "/docs", external: true },
-    { name: "GitHub", href: "https://github.com/your-repo", external: true },
+    { name: "GitHub", href: "https://github.com/ovokpus/EvolSynth-API", external: true },
   ];
 
   return (
