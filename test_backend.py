@@ -129,4 +129,4 @@ if __name__ == "__main__":
         print("\n🎉 All tests passed! Your optimized backend is ready to use.")
     else:
         print("\n🔧 Some tests failed. Check the backend is running:")
-        print("   cd api && python start_optimized.py") 
+        print("   cd api && uvicorn main:app --reload --host 0.0.0.0 --port 8000") 

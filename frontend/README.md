@@ -21,7 +21,7 @@ Make sure you have the EvolSynth backend running:
 ```bash
 # From project root
 cd api
-python start_optimized.py
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Backend should be available at: http://localhost:8000
