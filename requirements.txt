@@ -1,0 +1,42 @@
+# EvolSynth API - Core Dependencies Only
+# Generated from analysis of actual API imports and functionality
+
+# FastAPI Web Framework
+fastapi>=0.115.0
+uvicorn>=0.32.0
+python-multipart>=0.0.20
+
+# LangChain Ecosystem (Core AI functionality)
+langchain>=0.3.26
+langchain-community>=0.3.27
+langchain-core>=0.3.68
+langchain-openai>=0.3.28
+langgraph>=0.5.2
+
+# OpenAI Integration
+openai>=1.95.1
+
+# Pydantic (Data validation and settings)
+pydantic>=2.11.7
+pydantic-settings>=2.10.1
+
+# Document Processing
+pypdf>=5.8.0
+
+# Environment Configuration
+python-dotenv>=1.1.1
+
+# Optional: Enhanced Dependencies (can be removed if not needed)
+# -------------------------------------------------------------
+# For PDF processing improvements
+pymupdf>=1.24.0
+
+# For enhanced document loading
+unstructured>=0.18.5
+
+# For better text processing
+beautifulsoup4>=4.13.4
+
+# For HTTP client functionality (if external APIs are called)
+httpx>=0.28.1
+requests>=2.32.4

@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Redis for caching and Celery broker
+  redis:
+    image: redis:7.2-alpine
+    container_name: evolsynth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - evolsynth-network
+
+  # Redis Insight for monitoring (optional)
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    container_name: evolsynth-redis-insight
+    ports:
+      - "8001:8001"
+    depends_on:
+      - redis
+    networks:
+      - evolsynth-network
+    profiles:
+      - monitoring
+
+  # Celery Flower for task monitoring (optional)
+  flower:
+    build: .
+    container_name: evolsynth-flower
+    command: celery -A api.tasks.background_tasks flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+    networks:
+      - evolsynth-network
+    profiles:
+      - monitoring
+
+  # Celery Worker
+  celery-worker:
+    build: .
+    container_name: evolsynth-celery-worker
+    command: celery -A api.tasks.background_tasks worker --loglevel=info --concurrency=4
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+    depends_on:
+      - redis
+    networks:
+      - evolsynth-network
+    profiles:
+      - background-tasks
+
+  # Main EvolSynth API (optional - for full containerization)
+  api:
+    build: .
+    container_name: evolsynth-api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - OPTIMIZATION_LEVEL=production
+    depends_on:
+      - redis
+    networks:
+      - evolsynth-network
+    profiles:
+      - full-stack
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  evolsynth-network:
+    driver: bridge 
