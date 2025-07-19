@@ -4,7 +4,6 @@ Optimized for speed with async processing, batching, and caching
 """
 
 import asyncio
-import aiohttp
 import time
 import re
 from typing import List, Dict, Any, Optional

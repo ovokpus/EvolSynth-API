@@ -27,10 +27,10 @@ except ImportError:
 
 # Local imports
 from api.config import settings, validate_api_keys, setup_environment
-from api.models.requests import GenerationRequest, EvaluationRequest, BatchGenerationRequest
+from api.models.requests import GenerationRequest, EvaluationRequest
 from api.models.responses import (
     GenerationResponse, EvaluationResponse, HealthResponse, 
-    ErrorResponse, BatchGenerationResponse, StatusResponse
+    ErrorResponse, StatusResponse
 )
 from api.models.core import DocumentInput, PerformanceMetrics
 
