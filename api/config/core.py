@@ -6,7 +6,7 @@ Main settings and environment variables for the synthetic data generation API
 import os
 from typing import Optional
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, validator
 
 
 class Settings(BaseSettings):
@@ -61,6 +61,21 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379, alias="REDIS_PORT")
     redis_db: int = Field(default=0, alias="REDIS_DB")
     redis_password: Optional[str] = Field(default=None, alias="REDIS_PASSWORD")
+    
+    @validator('redis_port', pre=True)
+    def parse_redis_port(cls, v):
+        """Parse Redis port, handling Railway variable resolution issues"""
+        if isinstance(v, str):
+            # Handle Railway unresolved variables
+            if v.startswith('${') and v.endswith('}'):
+                print(f"⚠️  Redis port variable not resolved: {v}, using default 6379")
+                return 6379
+            try:
+                return int(v)
+            except ValueError:
+                print(f"⚠️  Invalid Redis port: {v}, using default 6379")
+                return 6379
+        return v
     
     # Security Configuration (for compatibility)
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
