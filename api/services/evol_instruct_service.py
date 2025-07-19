@@ -228,14 +228,8 @@ class EvolInstructService:
                 response_text, documents
             )
             
-            # Use FAST keyword-based context extraction (much better quality!)
-            print(f"🔍 DEBUG: About to extract contexts for {len(evolved_questions)} questions from {len(documents)} documents")
+            # Use FAST keyword-based context extraction with AI summaries
             question_contexts = self._extract_contexts_fast(evolved_questions, documents)
-            print(f"🔍 DEBUG: Extracted {len(question_contexts)} context groups")
-            for i, ctx in enumerate(question_contexts[:3]):  # Show first 3 for debugging
-                print(f"🔍 DEBUG: Context {i+1}: question_id={ctx['question_id']}, contexts_count={len(ctx.get('contexts', []))}")
-                if ctx.get('contexts'):
-                    print(f"🔍 DEBUG: First context: {ctx['contexts'][0]['text'][:100]}... (source: {ctx['contexts'][0]['source']})")
 
         except Exception as e:
             print(f"Error in fast generation: {e}")
@@ -742,52 +736,54 @@ class EvolInstructService:
         return results
 
     def _extract_contexts_fast(self, questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
-        """ULTRA-FAST context extraction using keyword matching instead of LLM calls"""
+        """ULTRA-FAST context extraction with AI summarization and proper document titles"""
         results = []
         
         for question in questions:
             question_text = question.get('question', '')
             question_specific_contexts = []
             
-            # Fast keyword-based context extraction
+            # Fast keyword-based context extraction with AI summarization
             for doc_index, doc in enumerate(documents[:3]):  # Limit to 3 docs for speed
                 content = doc.page_content
-                doc_source = doc.metadata.get('source', f'Document {doc_index + 1}')
+                
+                # Extract proper document title/name
+                doc_source = self._get_document_title(doc, doc_index)
                 
                 # Quick relevance check and context extraction
                 if self._is_content_relevant(question_text, content):
-                    # Extract relevant snippet without LLM call
+                    # Extract relevant snippet and create AI summary
                     context_snippet = self._extract_relevant_snippet(question_text, content)
+                    ai_summary = self._create_ai_summary(context_snippet, question_text, doc_source)
                     
                     question_specific_contexts.append({
-                        "text": context_snippet,
+                        "text": ai_summary,
                         "source": doc_source,
                         "document_index": doc_index
                     })
             
-            # ALWAYS provide at least one context (for debugging)
+            # ALWAYS provide at least one context with AI summary
             if not question_specific_contexts:
                 first_doc = documents[0] if documents else None
                 if first_doc:
-                    fallback_content = first_doc.page_content[:200] + "..."
-                    fallback_source = first_doc.metadata.get('source', 'Document 1')
+                    # Get proper document title
+                    doc_title = self._get_document_title(first_doc, 0)
+                    # Create AI summary for fallback content
+                    fallback_content = first_doc.page_content[:800]  # Use more content for better summary
+                    ai_summary = self._create_ai_summary(fallback_content, question_text, doc_title)
+                    
                     question_specific_contexts.append({
-                        "text": f"[FALLBACK CONTEXT] {fallback_content}",
-                        "source": f"📄 {fallback_source}",
+                        "text": ai_summary,
+                        "source": doc_title,
                         "document_index": 0
                     })
                 else:
                     # Absolute fallback if no documents
                     question_specific_contexts.append({
-                        "text": "[DEBUG] No documents available for context extraction",
-                        "source": "System Debug",
+                        "text": "No documents available for context extraction. Please upload documents to generate relevant context.",
+                        "source": "System Message",
                         "document_index": -1
                     })
-            
-            # Add debug info to contexts
-            for ctx in question_specific_contexts:
-                if "text" in ctx:
-                    ctx["text"] = f"[CONTEXT DEBUG: question={question.get('id', 'unknown')}] {ctx['text']}"
             
             results.append({
                 "question_id": question["id"],
@@ -990,3 +986,67 @@ class EvolInstructService:
             question_contexts = []  # Will be generated by _extract_contexts_fast()
         
         return evolved_questions, question_answers, question_contexts
+
+    def _get_document_title(self, doc: Document, doc_index: int) -> str:
+        """Extract proper document title from metadata"""
+        # Try to get the actual filename/source
+        source = doc.metadata.get('source', '')
+        
+        if source:
+            # If source is a file path, extract just the filename
+            if '/' in source or '\\' in source:
+                import os
+                filename = os.path.basename(source)
+                # Remove file extension for cleaner display
+                name_without_ext = os.path.splitext(filename)[0]
+                return name_without_ext if name_without_ext else filename
+            else:
+                return source
+        
+        # Fallback to generic name with proper numbering
+        return f"Document {doc_index + 1}"
+    
+    def _create_ai_summary(self, content: str, question: str, doc_source: str) -> str:
+        """Create AI-generated summary of context in under 200 words"""
+        try:
+            llm = self.llm_pool[0]  # Get LLM from pool
+            
+            summary_prompt = ChatPromptTemplate.from_template("""
+            Create a concise summary of the following content that specifically relates to this question. 
+            The summary MUST be under 200 words and focus only on information relevant to answering the question.
+            
+            Question: {question}
+            Content: {content}
+            Source: {source}
+            
+            Instructions:
+            - Keep under 200 words
+            - Focus only on content relevant to the question
+            - Use clear, concise language
+            - Include key facts and details that help answer the question
+            - Do not include irrelevant information
+            
+            Summary:""")
+            
+            response = llm.invoke(summary_prompt.format(
+                question=question,
+                content=content[:1500],  # Limit input content for faster processing
+                source=doc_source
+            ))
+            
+            summary = str(response.content).strip() if hasattr(response, 'content') else str(response).strip()
+            
+            # Ensure it's under 200 words
+            words = summary.split()
+            if len(words) > 200:
+                summary = ' '.join(words[:200]) + "..."
+            
+            return summary
+            
+        except Exception as e:
+            print(f"Error creating AI summary: {e}")
+            # Fallback to truncated content
+            words = content.split()
+            if len(words) > 50:
+                return ' '.join(words[:50]) + "..."
+            return content

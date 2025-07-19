@@ -820,62 +820,7 @@ async def get_generation_status(request_id: str):
     }
 
 
-@app.post("/debug/test-context-generation")
-async def debug_context_generation():
-    """Debug endpoint to test context generation"""
-    try:
-        # Test with dummy data
-        from langchain.schema import Document
-        
-        test_docs = [
-            Document(
-                page_content="Machine learning is a subset of artificial intelligence that enables computers to learn without being explicitly programmed. It uses algorithms to analyze data and make predictions.",
-                metadata={"source": "test_doc_1.txt"}
-            ),
-            Document(
-                page_content="Deep learning is a type of machine learning that uses neural networks with multiple layers. It's particularly effective for image recognition and natural language processing.",
-                metadata={"source": "test_doc_2.txt"}
-            )
-        ]
-        
-        test_questions = [
-            {
-                "id": "test_q_1",
-                "question": "What is machine learning?",
-                "evolution_type": "simple_evolution",
-                "complexity_level": 2
-            },
-            {
-                "id": "test_q_2", 
-                "question": "How does deep learning differ from traditional machine learning?",
-                "evolution_type": "reasoning_evolution",
-                "complexity_level": 4
-            }
-        ]
-        
-        # Test the fast context extraction
-        if evol_instruct_service:
-            contexts = evol_instruct_service._extract_contexts_fast(test_questions, test_docs)
-            
-            return {
-                "success": True,
-                "message": "Context generation test completed",
-                "test_questions": test_questions,
-                "generated_contexts": contexts,
-                "context_count": len(contexts)
-            }
-        else:
-            return {
-                "success": False,
-                "error": "EvolInstructService not available"
-            }
-            
-    except Exception as e:
-        return {
-            "success": False,
-            "error": f"Context generation test failed: {str(e)}",
-            "error_type": type(e).__name__
-        }
+
 
 
 if __name__ == "__main__":

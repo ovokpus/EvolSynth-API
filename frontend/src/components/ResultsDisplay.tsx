@@ -327,10 +327,6 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                     </div>
 
                     {/* Context Summary */}
-                    {(() => {
-                      console.log(`🔍 DEBUG UI: Question ${qa.id} context:`, qa.context, 'type:', typeof qa.context, 'Array?:', Array.isArray(qa.context), 'length:', Array.isArray(qa.context) ? qa.context.length : 'N/A');
-                      return null;
-                    })()}
                     {qa.context && Array.isArray(qa.context) && qa.context.length > 0 && (
                       <div>
                         <h4 className="font-medium text-primary-700 mb-2 flex items-center space-x-2">
@@ -384,19 +380,6 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                             </div>
                           </div>
                         )}
-                      </div>
-                    ) || (
-                      <div>
-                        <h4 className="font-medium text-primary-700 mb-2 flex items-center space-x-2">
-                          <FileText className="w-4 h-4" />
-                          <span>Context Summary</span>
-                          <span className="text-xs text-red-500 bg-red-100 px-2 py-0.5 rounded-full">Debug: No Context</span>
-                        </h4>
-                        <div className="bg-red-50/50 p-3 rounded-lg border border-red-200/60 shadow-sm">
-                          <div className="text-xs text-red-600">
-                            Debug: Context data is {qa.context ? `type: ${typeof qa.context}, isArray: ${Array.isArray(qa.context)}, length: ${Array.isArray(qa.context) ? qa.context.length : 'N/A'}` : 'null/undefined'}
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
