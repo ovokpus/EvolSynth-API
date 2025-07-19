@@ -8,7 +8,7 @@ export interface DocumentInput {
   source?: string;
 }
 
-export type EvolutionType = "simple_evolution" | "multi_context_evolution" | "reasoning_evolution";
+export type EvolutionType = "simple_evolution" | "multi_context_evolution" | "reasoning_evolution" | "complex_evolution";
 export type ExecutionMode = "concurrent" | "sequential";
 
 export interface EvolvedQuestion {
@@ -34,6 +34,7 @@ export interface GenerationSettings {
   simple_evolution_count: number;
   multi_context_evolution_count: number;
   reasoning_evolution_count: number;
+  complex_evolution_count: number;
   temperature: number;
   max_tokens: number;
 }
@@ -112,6 +113,7 @@ export interface FrontendGenerationSettings {
   simpleEvolutionCount: number;
   multiContextEvolutionCount: number;
   reasoningEvolutionCount: number;
+  complexEvolutionCount: number;
   includeContextual: boolean;
   includeReasoning: boolean;
   evaluationEnabled: boolean;

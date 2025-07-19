@@ -91,7 +91,8 @@ class EvolInstructService:
         evolution_tasks = [
             self._simple_evolution_batch(base_questions, documents),
             self._multi_context_evolution_batch(base_questions, documents),
-            self._reasoning_evolution_batch(base_questions, documents)
+            self._reasoning_evolution_batch(base_questions, documents),
+            self._complex_evolution_batch(base_questions, documents)
         ]
         
         # Execute all evolution types in parallel
@@ -178,6 +179,10 @@ class EvolInstructService:
     async def _reasoning_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
         """Apply reasoning evolution using batched processing"""
         return await self._evolution_batch(base_questions, documents, "reasoning_evolution", settings.reasoning_evolution_count)
+    
+    async def _complex_evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document]) -> List[Dict[str, Any]]:
+        """Apply complex meta-cognitive evolution using batched processing"""
+        return await self._evolution_batch(base_questions, documents, "complex_evolution", settings.complex_evolution_count)
     
     async def _evolution_batch(self, base_questions: List[Dict[str, Any]], documents: List[Document], evolution_type: str, count: int) -> List[Dict[str, Any]]:
         """Generic batched evolution processing"""
@@ -318,7 +323,7 @@ class EvolInstructService:
         results = []
         llm = self.llm_pool[0]  # Get LLM from pool
         
-        # Evolution prompts for different types - direct and clean
+                # Evolution prompts for different types - direct and clean
         evolution_prompts = {
             "simple_evolution": """
             Create a more specific and detailed version of this question without any conversational phrases:
@@ -337,7 +342,13 @@ class EvolInstructService:
 
             Question: {question}
 
-            Reasoning Question:"""
+            Reasoning Question:""",
+                        "complex_evolution": """
+            Create an advanced meta-cognitive question that combines reasoning, synthesis, and evaluation:
+
+            Question: {question}
+
+            Complex Meta-Cognitive Question:"""
                     }
         
         prompt_template = ChatPromptTemplate.from_template(evolution_prompts.get(evolution_type, evolution_prompts["simple_evolution"]))
@@ -359,7 +370,7 @@ class EvolInstructService:
                     "id": f"evolved_{id(question)}",
                     "question": evolved_question,
                     "evolution_type": evolution_type,
-                    "complexity_level": 2 if evolution_type == "simple_evolution" else 3 if evolution_type == "multi_context_evolution" else 4
+                    "complexity_level": 2 if evolution_type == "simple_evolution" else 3 if evolution_type == "multi_context_evolution" else 4 if evolution_type == "reasoning_evolution" else 5
                 }
                 results.append(evolved_q)
                 

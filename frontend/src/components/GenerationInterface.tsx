@@ -16,6 +16,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     simpleEvolutionCount: 3,
     multiContextEvolutionCount: 3,
     reasoningEvolutionCount: 2,
+    complexEvolutionCount: 1,
     includeContextual: true,
     includeReasoning: true,
     evaluationEnabled: true,
@@ -26,7 +27,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
 
   // Calculate estimated metrics
   const estimatedQuestions = Math.min(
-    settings.simpleEvolutionCount + settings.multiContextEvolutionCount + settings.reasoningEvolutionCount,
+    settings.simpleEvolutionCount + settings.multiContextEvolutionCount + settings.reasoningEvolutionCount + settings.complexEvolutionCount,
     settings.maxQuestions
   );
   
@@ -64,6 +65,10 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     
     if (settings.reasoningEvolutionCount < 0 || settings.reasoningEvolutionCount > 20) {
       errors.push("Reasoning evolution count must be between 0 and 20");
+    }
+    
+    if (settings.complexEvolutionCount < 0 || settings.complexEvolutionCount > 20) {
+      errors.push("Complex evolution count must be between 0 and 20");
     }
     
     if (estimatedQuestions === 0) {
@@ -145,6 +150,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
       simpleEvolutionCount: 3,
       multiContextEvolutionCount: 3,
       reasoningEvolutionCount: 2,
+      complexEvolutionCount: 1,
       includeContextual: true,
       includeReasoning: true,
       evaluationEnabled: true,
@@ -249,7 +255,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
             {/* Evolution Type Counts */}
             <div className="mt-6">
               <h4 className="text-sm font-medium text-primary-700 mb-3">Evolution Type Distribution</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {/* Simple Evolution */}
                 <div>
                   <label className="block text-sm font-medium text-primary-700 mb-2">
@@ -296,6 +302,22 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
                     className="w-full bg-light-100/50 border border-light-300 rounded-lg px-3 py-2 text-primary-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
                   />
                   <p className="text-xs text-primary-600 mt-1">Multi-step thinking</p>
+                </div>
+
+                {/* Complex Evolution */}
+                <div>
+                  <label className="block text-sm font-medium text-primary-700 mb-2">
+                    Complex
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={settings.complexEvolutionCount}
+                    onChange={(e) => setSettings({...settings, complexEvolutionCount: Number(e.target.value)})}
+                    className="w-full bg-light-100/50 border border-light-300 rounded-lg px-3 py-2 text-primary-700 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                  />
+                  <p className="text-xs text-primary-600 mt-1">Meta-cognitive synthesis</p>
                 </div>
               </div>
             </div>

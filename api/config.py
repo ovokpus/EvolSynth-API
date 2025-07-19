@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     simple_evolution_count: int = 3
     multi_context_evolution_count: int = 2
     reasoning_evolution_count: int = 2
+    complex_evolution_count: int = 1
     
     # Document Processing
     max_document_size_mb: int = 10

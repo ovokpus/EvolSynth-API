@@ -252,6 +252,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                 <option value="simple">Simple</option>
                 <option value="multi-context">Multi-Context</option>
                 <option value="reasoning">Reasoning</option>
+                <option value="complex">Complex</option>
               </select>
             </div>
 

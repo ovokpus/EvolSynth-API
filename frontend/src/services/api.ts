@@ -120,6 +120,7 @@ class APIClient {
       simple_evolution_count: settings.simpleEvolutionCount,
       multi_context_evolution_count: settings.multiContextEvolutionCount,
       reasoning_evolution_count: settings.reasoningEvolutionCount,
+      complex_evolution_count: settings.complexEvolutionCount,
       temperature: settings.temperature,
       max_tokens: 500, // Default value
     };
@@ -155,6 +156,8 @@ class APIClient {
         return 'multi-context';
       case 'reasoning_evolution':
         return 'reasoning';
+      case 'complex_evolution':
+        return 'complex';
       default:
         return 'unknown';
     }

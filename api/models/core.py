@@ -14,6 +14,7 @@ class EvolutionType(str, Enum):
     SIMPLE = "simple_evolution"
     MULTI_CONTEXT = "multi_context_evolution"
     REASONING = "reasoning_evolution"
+    COMPLEX = "complex_evolution"
 
 
 class ExecutionMode(str, Enum):
@@ -96,6 +97,7 @@ class GenerationSettings(BaseModel):
     simple_evolution_count: int = Field(default=3, ge=0, le=10, description="Number of simple evolution questions")
     multi_context_evolution_count: int = Field(default=2, ge=0, le=10, description="Number of multi-context evolution questions")
     reasoning_evolution_count: int = Field(default=2, ge=0, le=10, description="Number of reasoning evolution questions")
+    complex_evolution_count: int = Field(default=1, ge=0, le=10, description="Number of complex meta-cognitive evolution questions")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="LLM temperature setting")
     max_tokens: int = Field(default=500, ge=100, le=2000, description="Maximum tokens for LLM responses")
     
@@ -104,9 +106,10 @@ class GenerationSettings(BaseModel):
             "example": {
                 "execution_mode": "concurrent",
                 "max_base_questions_per_doc": 3,
-                "simple_evolution_count": 3,
-                "multi_context_evolution_count": 2,
-                "reasoning_evolution_count": 2,
+                            "simple_evolution_count": 3,
+            "multi_context_evolution_count": 2,
+            "reasoning_evolution_count": 2,
+            "complex_evolution_count": 1,
                 "temperature": 0.7,
                 "max_tokens": 500
             }
