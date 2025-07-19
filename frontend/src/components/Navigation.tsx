@@ -6,9 +6,35 @@ import { Brain, Menu, X, Github, ExternalLink } from "lucide-react";
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const scrollToCenter = (targetId: string) => {
+    const element = document.getElementById(targetId);
+    if (element) {
+      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - (window.innerHeight / 2) + (element.offsetHeight / 2);
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleNavClick = (href: string, external?: boolean) => {
+    if (external) return;
+    
+    if (href === "#docs") {
+      scrollToCenter("docs");
+    } else {
+      // Default smooth scroll behavior for other links
+      const element = document.querySelector(href);
+      element?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const navItems = [
     { name: "Home", href: "#home" },
     { name: "Features", href: "#features" },
+    { name: "API Docs", href: "#docs"},
     { name: "GitHub", href: "https://github.com/ovokpus/EvolSynth-API", external: true },
   ];
 
@@ -32,18 +58,29 @@ export default function Navigation() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="flex items-center space-x-1 text-primary-700 hover:text-primary-600 transition-colors duration-200 group"
-                target={item.external ? "_blank" : undefined}
-                rel={item.external ? "noopener noreferrer" : undefined}
-              >
-                <span className="text-primary-700">{item.name}</span>
-                {item.external && (
+              item.external ? (
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="flex items-center space-x-1 text-primary-700 hover:text-primary-600 transition-colors duration-200 group"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="text-primary-700">{item.name}</span>
                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary-700" />
-                )}
-              </a>
+                </a>
+              ) : (
+                <button
+                  key={item.name}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavClick(item.href);
+                  }}
+                  className="flex items-center space-x-1 text-primary-700 hover:text-primary-600 transition-colors duration-200 group"
+                >
+                  <span className="text-primary-700">{item.name}</span>
+                </button>
+              )
             ))}
             
             {/* CTA Button */}
@@ -68,17 +105,30 @@ export default function Navigation() {
           <div className="md:hidden py-4 border-t border-light-300">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center justify-between text-primary-700 hover:text-primary-600 transition-colors duration-200 py-2"
-                  target={item.external ? "_blank" : undefined}
-                  rel={item.external ? "noopener noreferrer" : undefined}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="text-primary-700">{item.name}</span>
-                  {item.external && <ExternalLink className="w-4 h-4 text-primary-700" />}
-                </a>
+                item.external ? (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center justify-between text-primary-700 hover:text-primary-600 transition-colors duration-200 py-2"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="text-primary-700">{item.name}</span>
+                    <ExternalLink className="w-4 h-4 text-primary-700" />
+                  </a>
+                ) : (
+                  <button
+                    key={item.name}
+                    className="flex items-center justify-between text-primary-700 hover:text-primary-600 transition-colors duration-200 py-2"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleNavClick(item.href);
+                    }}
+                  >
+                    <span className="text-primary-700">{item.name}</span>
+                  </button>
+                )
               ))}
               <button className="bg-primary-700 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:shadow-purple-glow mt-4 w-full">
                 Try Now
