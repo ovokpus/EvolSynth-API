@@ -1,6 +1,6 @@
 # 🚄 **EvolSynth API - Railway Deployment**
 
-> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🎨 Frontend](../frontend/README.md) | [🔀 Branches](../MERGE.md)
+> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🎨 Frontend](../frontend/README.md) | [🔀 Branches](../MERGE.md) | [📋 Changelog](../CHANGELOG.md)
 
 Complete guide for deploying the **EvolSynth API to Railway** with Redis caching, environment configuration, and production optimization.
 
@@ -12,6 +12,18 @@ Complete guide for deploying the **EvolSynth API to Railway** with Redis caching
 | **Frontend** | Vercel | 🚀 **Ready** | Deploy from `/frontend` folder |
 | **Database** | Railway Redis | ✅ **Connected** | Internal Railway network |
 | **Documentation** | API Docs | ✅ **Live** | https://evolsynth-api-production.up.railway.app/docs |
+
+## 🛠️ **Recent Fixes & Improvements**
+
+### ✅ **Production Issues Resolved**
+
+| Issue | Fix Applied | Status |
+|-------|-------------|--------|
+| **Swagger UI Layout Error** | Updated to Swagger UI v5.11.0 with OpenAPI 3.1.0 support | ✅ **Fixed** |
+| **Document Count Display** | Fixed frontend calculation to show correct upload count | ✅ **Fixed** |
+| **502 Bad Gateway** | Fixed Railway port configuration and Dockerfile | ✅ **Fixed** |
+| **Favicon 404 Errors** | Added favicon endpoint to reduce log noise | ✅ **Fixed** |
+| **CORS Issues** | Enhanced CORS configuration for Vercel domains | ✅ **Fixed** |
 
 ## 🚀 **Quick Setup Overview**
 

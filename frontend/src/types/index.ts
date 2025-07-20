@@ -219,7 +219,7 @@ export type GenerationStep = "upload" | "generate" | "results";
 export interface ConversionHelpers {
   frontendToBackendDocument: (doc: UploadedDocument) => DocumentInput;
   frontendToBackendSettings: (settings: FrontendGenerationSettings) => GenerationSettings;
-  backendToFrontendResults: (response: GenerationResponse, evaluation?: EvaluationResponse) => GenerationResults;
+  backendToFrontendResults: (response: GenerationResponse, evaluation?: EvaluationResponse, originalSettings?: FrontendGenerationSettings, documentsCount?: number) => GenerationResults;
   backendToDisplayQuestions: (
     questions: EvolvedQuestion[], 
     answers: QuestionAnswer[], 

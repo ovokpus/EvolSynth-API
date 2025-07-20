@@ -1,6 +1,6 @@
 # 🧬 **EvolSynth API** - Advanced Synthetic Data Generation
 
-> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md)
+> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md) | [📋 Changelog](CHANGELOG.md)
 
 **Transform documents into sophisticated evaluation datasets using the cutting-edge Evol-Instruct methodology**
 
@@ -9,6 +9,14 @@
 ## 🎯 **What is EvolSynth?**
 
 **EvolSynth API** is a production-ready synthetic data generation platform that implements the revolutionary **Evol-Instruct methodology** to create high-quality evaluation datasets. Unlike traditional question generators, EvolSynth evolves simple questions into progressively complex reasoning challenges through systematic transformation.
+
+## 🚀 **Latest Updates & Fixes**
+
+### ✅ **Production Enhancements (Latest)**
+- **🔧 Swagger UI Fixed**: Upgraded to v5.11.0 with full OpenAPI 3.1.0 support - documentation now renders perfectly
+- **📊 Frontend Bug Fix**: Corrected document count display in results (now shows accurate upload count)
+- **🎨 Improved Documentation**: Enhanced API docs with better compatibility and user experience
+- **⚡ Performance Optimized**: Maintained 75% faster generation speeds with enhanced reliability
 
 ### 🧬 **The Evol-Instruct Methodology**
 
@@ -321,4 +329,4 @@ Start generating sophisticated synthetic evaluation datasets that push the bound
 
 ---
 
-> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md)
+> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md) | [📋 Changelog](CHANGELOG.md)

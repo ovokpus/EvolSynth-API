@@ -169,7 +169,8 @@ class APIClient {
   private backendToFrontendResults(
     response: GenerationResponse,
     evaluation?: EvaluationResponse,
-    originalSettings?: FrontendGenerationSettings
+    originalSettings?: FrontendGenerationSettings,
+    documentsCount?: number
   ): GenerationResults {
 
     
@@ -182,10 +183,7 @@ class APIClient {
       performance_metrics: response.performance_metrics,
       evaluation,
       settings: originalSettings,
-      documentsProcessed: response.question_contexts.reduce((acc, qc) => {
-        const contextCount = Array.isArray(qc.contexts) ? qc.contexts.length : 1;
-        return Math.max(acc, contextCount);
-      }, 1),
+      documentsProcessed: documentsCount || 1,
       totalQuestions: response.evolved_questions.length,
       processingTime: response.performance_metrics.execution_time_seconds,
       timestamp: response.timestamp,
@@ -332,7 +330,8 @@ class APIClient {
       const frontendResults = this.backendToFrontendResults(
         generationResponse.data,
         evaluationResponse,
-        settings
+        settings,
+        documents.length
       );
       
 
