@@ -1,6 +1,6 @@
 # 🧬 **EvolSynth API** - Advanced Synthetic Data Generation
 
-> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md) | [📋 Changelog](CHANGELOG.md)
+> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md)
 
 **Transform documents into sophisticated evaluation datasets using the cutting-edge Evol-Instruct methodology**
 
@@ -329,4 +329,4 @@ Start generating sophisticated synthetic evaluation datasets that push the bound
 
 ---
 
-> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md) | [📋 Changelog](CHANGELOG.md)
+> **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md)

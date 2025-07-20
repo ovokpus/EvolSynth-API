@@ -1,6 +1,6 @@
 # 🎨 **EvolSynth Frontend**
 
-> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md) | [📋 Changelog](../CHANGELOG.md)
+> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md)
 
 A modern, responsive **Next.js frontend** for the EvolSynth synthetic data generation platform. Built with TypeScript, Tailwind CSS, and designed for seamless integration with the FastAPI backend.
 
