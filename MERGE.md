@@ -1,6 +1,6 @@
 # 🔀 **EvolSynth API - Branch Management & Merge Guide**
 
-> **🧭 Navigation**: [🏠 Root](README.md) | [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [📋 Changelog](CHANGELOG.md)
+> **🧭 Navigation**: [🏠 Root](README.md) | [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md)
 
 Complete guide for **branch management**, **merge strategies**, and **development workflow** for the EvolSynth API project.
 

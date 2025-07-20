@@ -1,6 +1,6 @@
 # 🚄 **EvolSynth API - Railway Deployment**
 
-> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🎨 Frontend](../frontend/README.md) | [🔀 Branches](../MERGE.md) | [📋 Changelog](../CHANGELOG.md)
+> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🎨 Frontend](../frontend/README.md) | [🔀 Branches](../MERGE.md)
 
 Complete guide for deploying the **EvolSynth API to Railway** with Redis caching, environment configuration, and production optimization.
 
