@@ -1,6 +1,6 @@
-# 🔀 **EvolSynth API - Development Workflow & Branch Management**
+# 🔀 **EvolSynth API - Branch Management & Merge Guide**
 
-> **🧭 Navigation**: [🏠 Root](README.md) | [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md)
+> **🧭 Navigation**: [🏠 Root](README.md) | [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [📋 Changelog](CHANGELOG.md)
 
 Complete guide for **branch management**, **merge strategies**, and **development workflow** for the EvolSynth API project.
 
@@ -279,6 +279,11 @@ git remote prune origin
 
 ### 🚄 **Deploy Branch (Current)**
 ```
+7b366cc - 🐛 Fix document count display bug in results
+02f9fee - 🔧 Fix OpenAPI 3.1.0 compatibility with newer Swagger UI
+b3ce63d - 🔧 Fix Swagger UI StandaloneLayout error
+ea33c6d - updated readme
+8149d0f - 📚 MASSIVE Documentation Reorganization & Cleanup
 83407df - updated with error fixing
 2a693b3 - 📚 Add comprehensive Vercel deployment docs and success summary
 9f84a9f - 🎉 Fix Railway 502 error and wire frontend to Railway API

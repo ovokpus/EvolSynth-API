@@ -1,6 +1,6 @@
 # 🎨 **EvolSynth Frontend**
 
-> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md)
+> **🧭 Navigation**: [🏠 Root](../README.md) | [🚀 API](../api/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md) | [📋 Changelog](../CHANGELOG.md)
 
 A modern, responsive **Next.js frontend** for the EvolSynth synthetic data generation platform. Built with TypeScript, Tailwind CSS, and designed for seamless integration with the FastAPI backend.
 
@@ -14,6 +14,13 @@ A modern, responsive **Next.js frontend** for the EvolSynth synthetic data gener
 - **🌙 Dark Mode**: Elegant dark blue theme for better UX
 - **📱 Responsive Design**: Works perfectly on desktop and mobile
 - **⚡ Fast API Integration**: Optimized for Railway backend deployment
+
+## 🛠️ **Recent Updates**
+
+### ✅ **Latest Fixes**
+- **📊 Document Count Display**: Fixed bug where results showed "1 Documents Processed" regardless of actual upload count
+- **🔗 API Integration**: Enhanced backend-to-frontend data transformation for accurate metrics
+- **📈 Results Accuracy**: Improved calculation of processing statistics and document counts
 
 ## 🚀 **Quick Start**
 

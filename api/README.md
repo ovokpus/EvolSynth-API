@@ -1,6 +1,6 @@
 # 🚀 **EvolSynth API**
 
-> **🧭 Navigation**: [🏠 Root](../README.md) | [🎨 Frontend](../frontend/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md)
+> **🧭 Navigation**: [🏠 Root](../README.md) | [🎨 Frontend](../frontend/README.md) | [🚄 Deploy](../deploy/README.md) | [🔀 Branches](../MERGE.md) | [📋 Changelog](../CHANGELOG.md)
 
 **Advanced Synthetic Data Generation using LangGraph-based Evol-Instruct methodology**
 
@@ -24,6 +24,13 @@ EvolSynth implements the cutting-edge **Evol-Instruct methodology** using **Lang
 - **📊 Real-time Monitoring**: Track generation progress with detailed status endpoints
 - **🎚️ Quality Control**: Built-in LLM-as-judge evaluation for question quality, answer accuracy, and evolution effectiveness
 - **🔧 Flexible Configuration**: Customize evolution parameters, execution modes, and quality thresholds
+
+## 🛠️ **Recent Production Updates**
+
+### ✅ **Swagger UI Improvements**
+- **🔧 OpenAPI 3.1.0 Support**: Updated Swagger UI to v5.11.0 for full OpenAPI 3.1.0 compatibility
+- **📖 Documentation Fixed**: Resolved "Unable to render this definition" errors
+- **🎨 Enhanced Interface**: Modern Swagger UI with improved usability and feature set
 
 ## 🔥 **MASSIVE Performance Improvements**
 
