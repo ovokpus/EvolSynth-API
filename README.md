@@ -95,90 +95,42 @@ graph TD
 ## 🏗️ **System Architecture**
 
 ```mermaid
-graph TB
-    subgraph "🌐 Frontend Layer"
-        UI[🎨 Next.js Frontend<br/>Vercel Deployment]
-        DOC[📄 Document Upload<br/>PDF/TXT Processing]
-        VIZ[📊 Results Visualization<br/>Quality Metrics]
-    end
+graph TD
+    A[User] --> B[Next.js Frontend]
+    B --> C[Document Upload]
+    C --> D[FastAPI Backend]
+    D --> E[Document Service]
+    E --> F[Evol-Instruct Service]
     
-    subgraph "🚀 API Layer (Railway)"
-        FAST[⚡ FastAPI Server<br/>Python 3.13]
-        AUTH[🔐 Security & CORS<br/>Rate Limiting]
-        HEALTH[💚 Health Monitoring<br/>Performance Metrics]
-    end
+    F --> G[Base Question Extraction]
+    G --> H[Simple Evolution]
+    G --> I[Multi-Context Evolution]
+    G --> J[Reasoning Evolution]
+    G --> K[Complex Evolution]
     
-    subgraph "🧬 Evolution Engine"
-        DOC_SVC[📚 Document Service<br/>Content Extraction]
-        EVOL_SVC[🧬 Evol-Instruct Service<br/>LangGraph Workflows]
-        EVAL_SVC[⚖️ Evaluation Service<br/>LLM-as-Judge]
-    end
+    H --> L[Evaluation Service]
+    I --> L
+    J --> L
+    K --> L
     
-    subgraph "🤖 LLM Integration"
-        OPENAI[🧠 OpenAI GPT-4o<br/>Question Generation]
-        LANG[📊 LangSmith<br/>Tracing & Monitoring]
-    end
+    L --> M[Results Display]
+    M --> A
     
-    subgraph "💾 Data Layer"
-        REDIS[⚡ Redis Cache<br/>Railway Internal]
-        MEMORY[🧠 In-Memory Fallback<br/>High Availability]
-    end
+    F -.-> N[OpenAI GPT-4]
+    L -.-> N
+    N -.-> O[LangSmith Tracing]
     
-    subgraph "🔄 Evolution Workflows"
-        BASE[🎯 Base Question Extraction]
-        SIMPLE[🎯 Simple Evolution]
-        MULTI[🌐 Multi-Context Evolution]
-        REASON[🧠 Reasoning Evolution]
-        COMPLEX[🔬 Complex Evolution]
-    end
+    F <--> P[Redis Cache]
+    L <--> P
+    P -.-> Q[In-Memory Fallback]
     
-    %% Frontend Connections
-    UI --> DOC
-    DOC --> VIZ
-    UI -.->|API Calls| FAST
-    
-    %% API Layer Connections
-    FAST --> AUTH
-    FAST --> HEALTH
-    FAST --> DOC_SVC
-    FAST --> EVOL_SVC
-    FAST --> EVAL_SVC
-    
-    %% Evolution Engine Connections
-    DOC_SVC --> EVOL_SVC
-    EVOL_SVC --> EVAL_SVC
-    EVOL_SVC --> BASE
-    
-    %% Workflow Connections
-    BASE --> SIMPLE
-    BASE --> MULTI
-    BASE --> REASON
-    BASE --> COMPLEX
-    
-    %% LLM Connections
-    EVOL_SVC -.->|API Calls| OPENAI
-    EVAL_SVC -.->|API Calls| OPENAI
-    OPENAI -.->|Traces| LANG
-    
-    %% Caching Connections
-    EVOL_SVC <--> REDIS
-    EVAL_SVC <--> REDIS
-    REDIS -.->|Fallback| MEMORY
-    
-    %% Styling
-    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef api fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef evolution fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef llm fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef data fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef workflow fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
-    
-    class UI,DOC,VIZ frontend
-    class FAST,AUTH,HEALTH api
-    class DOC_SVC,EVOL_SVC,EVAL_SVC evolution
-    class OPENAI,LANG llm
-    class REDIS,MEMORY data
-    class BASE,SIMPLE,MULTI,REASON,COMPLEX workflow
+    style A fill:#e3f2fd
+    style B fill:#f3e5f5
+    style D fill:#fff3e0
+    style F fill:#e8f5e8
+    style L fill:#e8f5e8
+    style N fill:#fff8e1
+    style P fill:#fce4ec
 ```
 
 ### 🔧 **Architecture Components**
