@@ -93,7 +93,7 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
           // Try to read as text for other file types
           try {
             content = await file.text();
-          } catch (error) {
+          } catch {
             content = `[File: ${file.name}] - Could not extract text content`;
           }
         }
@@ -114,7 +114,7 @@ export default function DocumentUpload({ documents, setDocuments, onNext }: Docu
           type: file.type,
         };
         newDocuments.push(document);
-      } catch (error) {
+      } catch {
         newErrors.push(`${file.name}: Failed to read file content`);
       }
     }

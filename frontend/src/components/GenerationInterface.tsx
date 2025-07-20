@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Zap, Settings, Brain, Clock, CheckCircle, AlertTriangle, Info, Calculator } from "lucide-react";
-import { UploadedDocument, GenerationResults, GenerationInterfaceProps, FrontendGenerationSettings } from "@/types";
+import { GenerationInterfaceProps, FrontendGenerationSettings } from "@/types";
 import { generateSyntheticData } from "@/services/api";
 
 export default function GenerationInterface({ documents, onComplete, onBack }: GenerationInterfaceProps) {
@@ -22,6 +22,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     evaluationEnabled: true,
     temperature: 0.7,
     concurrentProcessing: true,
+    fastMode: true,
     outputFormat: 'json' as 'json' | 'csv' | 'both',
   });
 
@@ -31,9 +32,11 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     settings.maxQuestions
   );
   
-  const estimatedTime = settings.concurrentProcessing 
-    ? Math.ceil(estimatedQuestions * 0.3) // 0.3 seconds per question with concurrency
-    : Math.ceil(estimatedQuestions * 1.2); // 1.2 seconds per question without concurrency
+  const estimatedTime = settings.fastMode 
+    ? Math.ceil(estimatedQuestions * 0.1) // Ultra-fast: 0.1 seconds per question with single API call
+    : settings.concurrentProcessing 
+      ? Math.ceil(estimatedQuestions * 0.3) // 0.3 seconds per question with concurrency
+      : Math.ceil(estimatedQuestions * 1.2); // 1.2 seconds per question without concurrency
 
   const totalCharacters = documents.reduce((sum, doc) => sum + doc.content.length, 0);
 
@@ -100,7 +103,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
     }
     
     setValidationErrors(errors);
-  }, [settings, estimatedQuestions, totalCharacters]);
+  }, [settings, estimatedQuestions, totalCharacters, documents.length]);
 
   // Real generation process using FastAPI backend with realistic progress tracking
   const performRealGeneration = async () => {
@@ -172,6 +175,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
       evaluationEnabled: true,
       temperature: 0.7,
       concurrentProcessing: true,
+      fastMode: true,
       outputFormat: 'json' as 'json' | 'csv' | 'both',
     });
   };
@@ -404,6 +408,19 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
                   />
                   <span className="text-primary-700">Concurrent Processing</span>
                 </label>
+                
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={settings.fastMode}
+                    onChange={(e) => setSettings({...settings, fastMode: e.target.checked})}
+                    className="w-4 h-4 text-primary-600 border-light-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-primary-700 flex items-center">
+                    <Zap className="w-4 h-4 mr-1 text-accent-emerald" />
+                    Ultra-Fast Mode
+                  </span>
+                </label>
               </div>
 
               {/* Output Format */}
@@ -445,7 +462,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
               <div className="bg-white/60 p-4 rounded-xl border border-primary-200">
                 <div className="text-2xl font-bold text-primary-700">~{estimatedTime}s</div>
                 <div className="text-sm text-primary-600">
-                  Processing Time {settings.concurrentProcessing && <span className="text-accent-emerald">(Concurrent)</span>}
+                  Processing Time {settings.fastMode ? <span className="text-accent-emerald font-semibold">⚡ Ultra-Fast</span> : settings.concurrentProcessing && <span className="text-accent-emerald">(Concurrent)</span>}
                 </div>
               </div>
               
@@ -461,7 +478,7 @@ export default function GenerationInterface({ documents, onComplete, onBack }: G
                 <Info className="w-4 h-4 text-blue-500 mt-0.5" />
                 <div className="text-sm text-blue-700">
                   <strong>Generation Process:</strong> Your documents will be processed through {settings.evolutionLevels} evolution levels, 
-                  creating {estimatedQuestions} questions total. {settings.concurrentProcessing ? 'Concurrent processing enabled for faster generation.' : 'Sequential processing selected.'}
+                  creating {estimatedQuestions} questions total. {settings.fastMode ? '⚡ Ultra-fast mode uses a single optimized API call for maximum speed.' : settings.concurrentProcessing ? 'Concurrent processing enabled for faster generation.' : 'Sequential processing selected.'}
                 </div>
               </div>
             </div>

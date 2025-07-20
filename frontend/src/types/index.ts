@@ -23,9 +23,16 @@ export interface QuestionAnswer {
   answer: string;
 }
 
+// Enhanced context with source information
+export interface EnhancedContext {
+  text: string;
+  source: string;
+  document_index: number;
+}
+
 export interface QuestionContext {
   question_id: string;
-  contexts: string[];
+  contexts: (string | EnhancedContext)[];  // Support both old and new format
 }
 
 export interface GenerationSettings {
@@ -56,6 +63,8 @@ export interface GenerationRequest {
   documents: DocumentInput[];
   settings?: GenerationSettings;
   max_iterations: number;
+  fast_mode: boolean;
+  skip_evaluation: boolean;
 }
 
 export interface GenerationResponse {
@@ -119,6 +128,7 @@ export interface FrontendGenerationSettings {
   evaluationEnabled: boolean;
   temperature: number;
   concurrentProcessing: boolean;
+  fastMode: boolean;
   outputFormat: 'json' | 'csv' | 'both';
 }
 
@@ -143,7 +153,7 @@ export interface DisplayQuestion {
   id: string;
   question: string;
   answer: string;
-  context: string[] | string;
+  context: (string | EnhancedContext)[] | string;  // Support enhanced contexts with source info
   level: string;
   metadata?: {
     confidence?: number;
@@ -199,6 +209,8 @@ export interface APIResponse<T> {
 }
 
 export type GenerationStatus = "idle" | "uploading" | "processing" | "generating" | "evaluating" | "completed" | "error";
+
+export type GenerationStep = "upload" | "generate" | "results";
 
 // =============================================================================
 // HELPER FUNCTIONS TYPES

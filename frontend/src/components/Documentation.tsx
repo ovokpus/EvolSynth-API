@@ -236,7 +236,7 @@ print(f"Quality scores: {evaluation['overall_scores']}")`;
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-gradient-to-br from-primary-50 to-purple-50 border border-primary-200 rounded-lg p-4">
                         <h5 className="font-medium text-primary-700 mb-2">🎨 Use the Interface</h5>
-                        <p className="text-sm text-primary-600 mb-3">Click "Start Generating" above for a guided experience</p>
+                        <p className="text-sm text-primary-600 mb-3">Click &quot;Start Generating&quot; above for a guided experience</p>
                         <div className="text-xs text-primary-500">
                           ✓ Visual document upload<br/>
                           ✓ Interactive settings<br/>

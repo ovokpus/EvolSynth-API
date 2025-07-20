@@ -1,10 +1,10 @@
 """
-Performance Optimization Configuration
-Settings and utilities for high-performance EvolSynth backend
+Performance Configuration for EvolSynth API
+Settings and utilities for high-performance backend optimization
 """
 
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -25,6 +25,7 @@ class PerformanceConfig:
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
+    redis_password: Optional[str] = None
     cache_ttl_seconds: int = 3600
     document_cache_ttl: int = 7200
     result_cache_ttl: int = 3600
@@ -127,26 +128,47 @@ def apply_environment_overrides(config: PerformanceConfig) -> PerformanceConfig:
     """Apply environment variable overrides to configuration"""
     
     # Redis settings
-    if os.getenv("REDIS_HOST"):
-        config.redis_host = os.getenv("REDIS_HOST")
-    if os.getenv("REDIS_PORT"):
-        config.redis_port = int(os.getenv("REDIS_PORT"))
-    if os.getenv("REDIS_ENABLED"):
-        config.redis_enabled = os.getenv("REDIS_ENABLED").lower() == "true"
+    redis_host = os.getenv("REDIS_HOST")
+    if redis_host:
+        config.redis_host = redis_host
+    
+    redis_port = os.getenv("REDIS_PORT")
+    if redis_port:
+        config.redis_port = int(redis_port)
+    
+    redis_password = os.getenv("REDIS_PASSWORD")
+    if redis_password:
+        config.redis_password = redis_password
+    
+    redis_enabled = os.getenv("REDIS_ENABLED")
+    if redis_enabled:
+        config.redis_enabled = redis_enabled.lower() == "true"
     
     # Concurrency settings
-    if os.getenv("MAX_CONCURRENT_REQUESTS"):
-        config.max_concurrent_requests = int(os.getenv("MAX_CONCURRENT_REQUESTS"))
-    if os.getenv("MAX_LLM_CONNECTIONS"):
-        config.max_llm_connections = int(os.getenv("MAX_LLM_CONNECTIONS"))
-    if os.getenv("THREAD_POOL_WORKERS"):
-        config.thread_pool_workers = int(os.getenv("THREAD_POOL_WORKERS"))
+    max_concurrent = os.getenv("MAX_CONCURRENT_REQUESTS")
+    if max_concurrent:
+        config.max_concurrent_requests = int(max_concurrent)
+    
+    max_llm_connections = os.getenv("MAX_LLM_CONNECTIONS")
+    if max_llm_connections:
+        config.max_llm_connections = int(max_llm_connections)
+    
+    thread_pool_workers = os.getenv("THREAD_POOL_WORKERS")
+    if thread_pool_workers:
+        config.thread_pool_workers = int(thread_pool_workers)
     
     # Celery settings
-    if os.getenv("CELERY_ENABLED"):
-        config.celery_enabled = os.getenv("CELERY_ENABLED").lower() == "true"
-    if os.getenv("CELERY_BROKER"):
-        config.celery_broker = os.getenv("CELERY_BROKER")
+    celery_enabled = os.getenv("CELERY_ENABLED")
+    if celery_enabled:
+        config.celery_enabled = celery_enabled.lower() == "true"
+    
+    celery_broker = os.getenv("CELERY_BROKER")
+    if celery_broker:
+        config.celery_broker = celery_broker
+    
+    celery_backend = os.getenv("CELERY_BACKEND")
+    if celery_backend:
+        config.celery_backend = celery_backend
     
     return config
 
@@ -157,14 +179,14 @@ class PerformanceMonitor:
     
     def __init__(self):
         self.metrics = {
-            "requests_per_second": 0,
-            "average_response_time": 0,
-            "cache_hit_ratio": 0,
+            "requests_per_second": 0.0,
+            "average_response_time": 0.0,
+            "cache_hit_ratio": 0.0,
             "active_connections": 0,
-            "memory_usage_mb": 0,
-            "cpu_usage_percent": 0,
+            "memory_usage_mb": 0.0,
+            "cpu_usage_percent": 0.0,
             "queue_length": 0,
-            "error_rate": 0
+            "error_rate": 0.0
         }
         self.request_times = []
         self.request_count = 0
@@ -278,7 +300,6 @@ class LoadBalancingConfig:
     scale_down_threshold: float = 0.3
 
 
-# Export configuration function
 def get_production_config() -> Dict[str, Any]:
     """Get production-ready performance configuration"""
     config = get_optimization_config(OptimizationLevel.PRODUCTION)
@@ -292,4 +313,32 @@ def get_production_config() -> Dict[str, Any]:
             "metrics_endpoint": "/metrics",
             "health_check_endpoint": "/health/detailed"
         }
-    } 
+    }
+
+
+def integrate_with_core_settings(core_settings) -> PerformanceConfig:
+    """Integrate performance config with core settings"""
+    # Get base performance config
+    env = getattr(core_settings, 'environment', 'production')
+    
+    if env == 'development':
+        config = get_optimization_config(OptimizationLevel.DEVELOPMENT)
+    elif env == 'testing':
+        config = get_optimization_config(OptimizationLevel.TESTING)
+    elif env == 'production':
+        config = get_optimization_config(OptimizationLevel.PRODUCTION)
+    else:
+        config = get_optimization_config(OptimizationLevel.PRODUCTION)
+    
+    # Override with core settings values
+    config.max_concurrent_requests = getattr(core_settings, 'max_concurrency', config.max_concurrent_requests)
+    config.redis_host = getattr(core_settings, 'redis_host', config.redis_host)
+    config.redis_port = getattr(core_settings, 'redis_port', config.redis_port)
+    config.redis_password = getattr(core_settings, 'redis_password', config.redis_password)
+    config.llm_request_timeout = getattr(core_settings, 'llm_request_timeout', config.llm_request_timeout)
+    config.async_batch_size = getattr(core_settings, 'batch_size', config.async_batch_size)
+    
+    # Apply environment overrides
+    config = apply_environment_overrides(config)
+    
+    return config 

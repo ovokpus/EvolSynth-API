@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, Clock, TrendingUp, Share } from "lucide-react";
-import { GenerationResults, ResultsDisplayProps, DisplayQuestion } from "@/types";
+import { Download, Copy, BarChart3, FileText, MessageSquare, Lightbulb, RotateCcw, CheckCircle, Star, TrendingUp, Share } from "lucide-react";
+import { ResultsDisplayProps, DisplayQuestion, EnhancedContext } from "@/types";
 import { getDisplayQuestions } from "@/services/api";
 import MarkdownRenderer from "./MarkdownRenderer";
 
@@ -12,6 +12,8 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
 
+
+
   const copyToClipboard = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -20,6 +22,59 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
     } catch (err) {
       console.error('Failed to copy text: ', err);
     }
+  };
+
+  // Helper function to format context for export - BULLETPROOF VERSION
+  const formatContextForExport = (context: (string | EnhancedContext)[] | string | undefined): string => {
+    if (!context) return 'No context available';
+    
+    if (typeof context === 'string') {
+      return context;
+    }
+    
+    if (Array.isArray(context)) {
+      return context.map((ctx, index) => {
+        if (typeof ctx === 'string') {
+          return ctx;
+        } else if (ctx && typeof ctx === 'object') {
+          // Try multiple ways to extract enhanced context data
+          const ctxObj = ctx as unknown as Record<string, unknown>;
+          
+          // Method 1: Standard enhanced context
+          if (ctxObj.text && ctxObj.source) {
+            return `[${ctxObj.source}] ${ctxObj.text}`;
+          }
+          
+          // Method 2: Check for nested properties
+          if (ctxObj.contexts && Array.isArray(ctxObj.contexts) && ctxObj.contexts[0]) {
+            const nestedCtx = ctxObj.contexts[0];
+            if (nestedCtx.text && nestedCtx.source) {
+              return `[${nestedCtx.source}] ${nestedCtx.text}`;
+            }
+          }
+          
+          // Method 3: Check if it's a question context object
+          if (ctxObj.question_id && ctxObj.contexts) {
+            return formatContextForExport(ctxObj.contexts as (string | EnhancedContext)[] | string);
+          }
+          
+          // Method 4: Look for any text-like content
+          const possibleText = ctxObj.content || ctxObj.text || ctxObj.answer || ctxObj.summary;
+          const possibleSource = ctxObj.source || ctxObj.title || ctxObj.filename || ctxObj.name || `Context ${index + 1}`;
+          
+          if (possibleText) {
+            return `[${possibleSource}] ${possibleText}`;
+          }
+          
+          // Method 5: Fallback to JSON if it's a complex object
+          return `[Object ${index + 1}] ${JSON.stringify(ctxObj).substring(0, 100)}...`;
+        } else {
+          return String(ctx || `Empty context ${index + 1}`);
+        }
+      }).join('; ');
+    }
+    
+    return String(context);
   };
 
   const exportData = (format: 'json' | 'csv' | 'txt') => {
@@ -39,11 +94,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
       const csvRows = [headers.join(',')];
       
       displayQuestions.forEach(q => {
+        const formattedContext = formatContextForExport(q.context);
         const row = [
           `"${q.id || 'N/A'}"`,
           `"${q.question.replace(/"/g, '""')}"`,
           `"${q.answer.replace(/"/g, '""')}"`,
-          `"${Array.isArray(q.context) ? q.context.join('; ') : q.context || ''}"`,
+          `"${formattedContext.replace(/"/g, '""')}"`,
           `"${q.level || 'unknown'}"`,
           `"${q.metadata?.confidence || 0}"`,
           `"${q.metadata?.source || 'unknown'}"`
@@ -66,8 +122,9 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
         content += `${index + 1}. ${q.question}\n`;
         content += `Answer: ${q.answer}\n`;
         content += `Level: ${q.level}\n`;
-        if (q.context) {
-          content += `Context: ${Array.isArray(q.context) ? q.context.join(', ') : q.context}\n`;
+        const formattedContext = formatContextForExport(q.context);
+        if (formattedContext) {
+          content += `Context: ${formattedContext}\n`;
         }
         content += `\n`;
       });
@@ -115,6 +172,8 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
   // Convert backend data to display format
   const displayQuestions: DisplayQuestion[] = results ? getDisplayQuestions(results) : [];
   
+
+
   const tabs = [
     { id: 'questions' as const, label: 'Questions & Answers', icon: MessageSquare, count: displayQuestions.length },
     { id: 'evaluation' as const, label: 'Quality Metrics', icon: BarChart3 },
@@ -180,7 +239,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
           </div>
         </div>
         <div className="bg-white/80 rounded-xl p-4 border border-light-300 text-center shadow-light-lg">
-          <div className="text-2xl font-bold text-primary-700">{results.documents?.length || results.documentsProcessed || 0}</div>
+          <div className="text-2xl font-bold text-primary-700">{results.documentsProcessed || 0}</div>
           <div className="text-sm text-primary-600">Documents Processed</div>
           <div className="text-xs text-light-500 mt-1">Input sources analyzed</div>
         </div>
@@ -327,7 +386,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                     </div>
 
                     {/* Context Summary */}
-                    {qa.context && (
+                    {qa.context && Array.isArray(qa.context) && qa.context.length > 0 && (
                       <div>
                         <h4 className="font-medium text-primary-700 mb-2 flex items-center space-x-2">
                           <FileText className="w-4 h-4" />
@@ -336,27 +395,70 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                         </h4>
                         {Array.isArray(qa.context) ? (
                           <ul className="space-y-2">
-                            {qa.context.map((ctx, i) => (
-                              <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
-                                <div className="flex items-start space-x-2">
-                                  <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                                  <div className="text-xs text-primary-600 leading-relaxed">
-                                    <MarkdownRenderer 
-                                      content={ctx} 
-                                      contentType="general"
-                                      enhanceFormatting={true}
-                                      className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
-                                    />
+                            {qa.context.map((ctx, i) => {
+                              // Handle multiple context formats with robust checking
+                              let contextText = '';
+                              let contextSource = '';
+                              
+                              if (typeof ctx === 'string') {
+                                // Simple string context
+                                contextText = ctx;
+                                contextSource = `Context ${i + 1}`;
+                                                             } else if (ctx && typeof ctx === 'object') {
+                                 // Enhanced context object - check for all possible properties
+                                 const ctxObj = ctx as EnhancedContext | Record<string, unknown>;
+                                 if ('text' in ctxObj && 'source' in ctxObj) {
+                                   // Standard enhanced context
+                                   contextText = String(ctxObj.text || ctxObj.source || 'No content available');
+                                   contextSource = String(ctxObj.source || `Document ${i + 1}`);
+                                 } else if ('text' in ctxObj) {
+                                   // Has text but no source
+                                   contextText = String(ctxObj.text);
+                                   contextSource = `Context ${i + 1}`;
+                                 } else if ('source' in ctxObj) {
+                                   // Has source but no text
+                                   contextText = String(ctxObj.source);
+                                   contextSource = String(ctxObj.source);
+                                 } else {
+                                   // Object with unknown structure - convert to string
+                                   contextText = JSON.stringify(ctx, null, 2);
+                                   contextSource = `Context ${i + 1}`;
+                                 }
+                              } else {
+                                // Fallback for any other type
+                                contextText = String(ctx || 'No context available');
+                                contextSource = `Context ${i + 1}`;
+                              }
+                              
+                              return (
+                                <li key={`context-${qa.id}-${index}-${i}`} className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
+                                  <div className="flex items-start space-x-2">
+                                    <div className="w-1 h-1 bg-primary-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-1 mb-1">
+                                        <span className="text-xs text-primary-500 bg-primary-200/50 px-2 py-0.5 rounded-full font-medium">
+                                          📄 {contextSource}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-primary-600 leading-relaxed">
+                                        <MarkdownRenderer 
+                                          content={contextText} 
+                                          contentType="general"
+                                          enhanceFormatting={true}
+                                          className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </li>
-                            ))}
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : (
                           <div className="bg-primary-50/50 p-3 rounded-lg border border-primary-200/60 shadow-sm">
                             <div className="text-xs text-primary-600 leading-relaxed">
                               <MarkdownRenderer 
-                                content={qa.context} 
+                                content={qa.context as string} 
                                 contentType="general"
                                 enhanceFormatting={true}
                                 className="text-xs [&_p]:text-xs [&_p]:mb-1 [&_li]:text-xs [&_strong]:text-xs"
@@ -450,7 +552,7 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
                   <div className="flex justify-between items-center">
                     <span className="text-primary-600">Questions/Second</span>
                     <span className="text-primary-700 font-medium">
-                      {((results.questions?.length || 0) / (results.processingTime || 1)).toFixed(1)}
+                      {((results.evolved_questions?.length || 0) / (results.processingTime || 1)).toFixed(1)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -534,12 +636,12 @@ export default function ResultsDisplay({ results, onReset }: ResultsDisplayProps
               <div className="bg-light-100/50 p-4 rounded-lg border border-light-200">
                 <h4 className="font-medium text-primary-700 mb-2">Export Statistics</h4>
                 <div className="text-sm text-primary-600 space-y-1">
-                  <div>Total Questions: {results.questions?.length || 0}</div>
+                  <div>Total Questions: {results.evolved_questions?.length || 0}</div>
                   <div>Estimated File Sizes:</div>
                   <div className="ml-4">
                     <div>• JSON: ~{Math.round((JSON.stringify(results).length / 1024) * 1.2)}KB</div>
-                    <div>• CSV: ~{Math.round((results.questions?.length || 0) * 0.5)}KB</div>
-                    <div>• TXT: ~{Math.round((results.questions?.length || 0) * 1.0)}KB</div>
+                    <div>• CSV: ~{Math.round((results.evolved_questions?.length || 0) * 0.5)}KB</div>
+                    <div>• TXT: ~{Math.round((results.evolved_questions?.length || 0) * 1.0)}KB</div>
                   </div>
                 </div>
               </div>

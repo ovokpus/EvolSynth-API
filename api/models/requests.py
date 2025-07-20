@@ -13,6 +13,8 @@ class GenerationRequest(BaseModel):
     documents: List[DocumentInput] = Field(..., min_length=1, max_length=10, description="Input documents for synthetic data generation")
     settings: Optional[GenerationSettings] = Field(default=None, description="Generation settings (uses defaults if not provided)")
     max_iterations: int = Field(default=1, ge=1, le=5, description="Maximum number of generation iterations")
+    fast_mode: bool = Field(default=True, description="Enable ultra-fast generation (single API call instead of multiple)")
+    skip_evaluation: bool = Field(default=True, description="Skip evaluation for maximum speed (evaluation can be done separately)")
     
     class Config:
         json_schema_extra = {
@@ -35,7 +37,9 @@ class GenerationRequest(BaseModel):
                     "multi_context_evolution_count": 2,
                     "reasoning_evolution_count": 2
                 },
-                "max_iterations": 1
+                "max_iterations": 1,
+                "fast_mode": True,
+                "skip_evaluation": True
             }
         }
 

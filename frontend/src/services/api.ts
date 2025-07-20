@@ -10,7 +10,6 @@ import {
   EvaluationResponse,
   HealthResponse,
   APIResponse,
-  APIError,
   DisplayQuestion,
   EvolvedQuestion,
   QuestionAnswer,
@@ -134,18 +133,22 @@ class APIClient {
     const answerMap = new Map(answers.map(a => [a.question_id, a.answer]));
     const contextMap = new Map(contexts.map(c => [c.question_id, c.contexts]));
 
-    return questions.map(q => ({
-      id: q.id,
-      question: q.question,
-      answer: answerMap.get(q.id) || 'No answer available',
-      context: contextMap.get(q.id) || [],
-      level: this.mapEvolutionTypeToLevel(q.evolution_type),
-      metadata: {
-        complexity_level: q.complexity_level,
-        evolution_type: q.evolution_type,
-        source: q.id || 'unknown',
-      },
-    }));
+    return questions.map(q => {
+      const contextData = contextMap.get(q.id) || [];
+      
+      return {
+        id: q.id,
+        question: q.question,
+        answer: answerMap.get(q.id) || 'No answer available',
+        context: contextData,
+        level: this.mapEvolutionTypeToLevel(q.evolution_type),
+        metadata: {
+          complexity_level: q.complexity_level,
+          evolution_type: q.evolution_type,
+          source: q.id || 'unknown',
+        },
+      };
+    });
   }
 
   private mapEvolutionTypeToLevel(evolutionType: string): string {
@@ -168,6 +171,8 @@ class APIClient {
     evaluation?: EvaluationResponse,
     originalSettings?: FrontendGenerationSettings
   ): GenerationResults {
+
+    
     return {
       success: response.success,
       generation_id: response.generation_id,
@@ -273,6 +278,8 @@ class APIClient {
         documents: backendDocuments,
         settings: backendSettings,
         max_iterations: 1,
+        fast_mode: settings.fastMode,  // Enable ultra-fast generation if selected
+        skip_evaluation: !settings.evaluationEnabled,  // Skip evaluation if disabled
       };
 
       // Call generation endpoint
@@ -281,30 +288,9 @@ class APIClient {
         body: JSON.stringify(request),
       });
 
-      // If onProgress callback is provided and we have a generation_id, poll for progress
-      if (onProgress && generationResponse.success && generationResponse.data?.generation_id) {
-        const generationId = generationResponse.data.generation_id;
-        
-        // Start polling for progress (optional feature for future use)
-        const pollProgress = async () => {
-          try {
-            const statusResponse = await this.checkGenerationStatus(generationId);
-            if (statusResponse.success && statusResponse.data) {
-              const { progress, current_stage, status } = statusResponse.data;
-              onProgress(Math.round(progress * 100), current_stage);
-              
-              // Continue polling if not completed
-              if (status === 'running' && progress < 1.0) {
-                setTimeout(pollProgress, 1000); // Poll every second
-              }
-            }
-          } catch (error) {
-            logger.warn('Progress polling failed', error);
-          }
-        };
-        
-        // Note: This is disabled for now since the current backend returns immediately
-        // pollProgress();
+      // If onProgress callback is provided, report completion since backend returns immediately
+      if (onProgress && generationResponse.success) {
+        onProgress(100, 'completed');
       }
 
       if (!generationResponse.success || !generationResponse.data) {
@@ -348,6 +334,8 @@ class APIClient {
         evaluationResponse,
         settings
       );
+      
+
 
       return {
         success: true,

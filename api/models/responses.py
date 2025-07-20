@@ -64,6 +64,9 @@ class EvaluationResponse(BaseModel):
     overall_scores: Dict[str, float] = Field(..., description="Overall evaluation scores by metric")
     detailed_results: List[Dict[str, Any]] = Field(..., description="Detailed evaluation results per question")
     summary_statistics: Dict[str, Any] = Field(..., description="Summary statistics for the evaluation")
+    raw_scores: Optional[Dict[str, List[float]]] = Field(None, description="Raw 1-9 scores for debugging")
+    evaluation_time_seconds: Optional[float] = Field(None, description="Time taken for evaluation in seconds")
+    quality_cap_info: Optional[str] = Field(None, description="Information about quality score capping")
     timestamp: datetime = Field(default_factory=datetime.now, description="Evaluation timestamp")
     
     class Config:
@@ -93,6 +96,12 @@ class EvaluationResponse(BaseModel):
                         "reasoning_evolution": 2
                     }
                 },
+                "raw_scores": {
+                    "question_quality": [8.0, 7.5, 9.0],
+                    "answer_accuracy": [7.0, 8.0, 6.5]
+                },
+                "evaluation_time_seconds": 12.5,
+                "quality_cap_info": "Quality scores are capped at 95% maximum to ensure realistic assessment",
                 "timestamp": "2024-01-01T12:00:00"
             }
         }
@@ -125,6 +134,8 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error type or code")
     message: str = Field(..., description="Human-readable error message")
     details: Optional[Dict[str, Any]] = Field(default=None, description="Additional error details")
+    category: Optional[str] = Field(default=None, description="Error category for classification")
+    status_code: Optional[int] = Field(default=None, description="HTTP status code")
     timestamp: datetime = Field(default_factory=datetime.now, description="Error timestamp")
     
     class Config:
