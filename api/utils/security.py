@@ -342,32 +342,44 @@ def configure_cors(app, allowed_origins: Optional[List[str]] = None) -> None:
     """Configure CORS middleware with security best practices"""
     if allowed_origins is None:
         if settings.debug:
-            # Development: Allow common development origins
-            allowed_origins = [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000", 
-                "http://localhost:3001",
-                "http://127.0.0.1:3001",
-                "http://localhost:8000",
-                "http://127.0.0.1:8000"
-            ]
+            # Development: Allow all origins for testing
+            allowed_origins = ["*"]
         else:
-            # Production: Specify exact origins
+            # Production: Allow Vercel and common production origins
             allowed_origins = [
-                "https://yourdomain.com",
-                "https://www.yourdomain.com",
-                "https://api.yourdomain.com"
+                "https://evolsynth-frontend.vercel.app",
+                "https://evolsynth.ai",
+                "https://www.evolsynth.ai", 
+                "https://api.evolsynth.ai"
             ]
+            
+            # Add dynamic Vercel domain support
+            import os
+            vercel_url = os.getenv("VERCEL_URL")
+            if vercel_url:
+                allowed_origins.append(f"https://{vercel_url}")
     
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["X-Process-Time", "X-Request-ID"],
-        max_age=600,  # 10 minutes
-    )
+    # For production with dynamic origins, use allow_origin_regex for Vercel
+    if not settings.debug:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origin_regex=r"https://.*\.vercel\.app",
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+            allow_headers=["*"],
+            expose_headers=["X-Process-Time", "X-Request-ID"],
+            max_age=600,  # 10 minutes
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=True,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+            allow_headers=["*"],
+            expose_headers=["X-Process-Time", "X-Request-ID"],
+            max_age=600,  # 10 minutes
+        )
 
 
 def hash_sensitive_data(data: str, salt: str = "") -> str:

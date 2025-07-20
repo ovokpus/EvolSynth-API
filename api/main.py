@@ -9,13 +9,15 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File, status
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, Response
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 import tempfile
 import os
 from pathlib import Path
+from contextlib import asynccontextmanager
+import logging
 
 # Performance imports
 try:
@@ -216,9 +218,25 @@ async def redoc_html():
     )
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Return a simple favicon to prevent 404 logs"""
+    # Simple 1x1 transparent PNG favicon
+    favicon_content = bytes([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+        0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+    ])
+    return Response(content=favicon_content, media_type="image/png")
+
+
 # Core API endpoints with enhanced documentation
-@app.get(
+@app.api_route(
     "/", 
+    methods=["GET", "HEAD"],
     response_model=HealthResponse,
     tags=["Health"],
     summary="API Status and Information",
