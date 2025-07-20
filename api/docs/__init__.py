@@ -346,7 +346,6 @@ def customize_swagger_ui() -> str:
                 plugins: [
                     SwaggerUIBundle.plugins.DownloadUrl
                 ],
-                layout: "StandaloneLayout",
                 tryItOutEnabled: true,
                 filter: true,
                 persistAuthorization: true,
