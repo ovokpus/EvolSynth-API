@@ -1,6 +1,6 @@
-<p align="center"><img src="assets/banner.jpg" alt="Rack of test tubes with crystals growing larger from left to right" width="100%"></p>
-
 # 🧬 **EvolSynth API** - Advanced Synthetic Data Generation
+
+<p align="center"><img src="assets/banner.jpg" alt="Rack of test tubes with crystals growing larger from left to right" width="100%"></p>
 
 > **🧭 Navigation**: [🚀 API](api/README.md) | [🎨 Frontend](frontend/README.md) | [🚄 Deploy](deploy/README.md) | [🔀 Branches](MERGE.md)
 
