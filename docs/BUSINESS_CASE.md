@@ -40,7 +40,7 @@ These figures are **illustrative assumptions**. Replace them with your own.
 | Expert minutes to write one question with an answer and its source, by hand | 15 | Assumption |
 | Expert minutes to review one generated question | 3 | Assumption |
 | Evaluation sets built per year (new corpora and major releases) | 6 | Assumption |
-| Expert hourly cost | US$70 | BLS May 2024 median for data scientists is $112,590 a year, about $54 an hour ([BLS](https://www.bls.gov/ooh/math/data-scientists.htm)). Multiplied by an assumed 1.3 for overhead. |
+| Expert hourly cost | US$70 | BLS May 2024 median for data scientists is $112,590 a year, about $54 an hour ([BLS](https://www.bls.gov/news.release/archives/ocwage_04022025.pdf)). Multiplied by an assumed 1.3 for overhead. |
 
 By hand: 300 × 15 min = 75 hours per set. With generation plus review: 300 × 3 min = 15 hours per set. Saving: 60 hours × 6 sets = **360 hours a year, about US$25,000**, before LLM API costs. The larger benefit isn't counted: a test set that exists before launch, so the go/no-go decision rests on measurements rather than a demo.
 
@@ -63,4 +63,4 @@ By hand: 300 × 15 min = 75 hours per set. With generation plus review: 300 × 3
 - Gartner press release (Jul 29, 2024): https://www.gartner.com/en/newsroom/press-releases/2024-07-29-gartner-predicts-30-percent-of-generative-ai-projects-will-be-abandoned-after-proof-of-concept-by-end-of-2025
 - Gartner, "Why 50% of GenAI Projects Fail" (2026): https://www.gartner.com/en/articles/genai-project-failure
 - Xu et al., *WizardLM: Empowering Large Language Models to Follow Complex Instructions* (2023): https://arxiv.org/abs/2304.12244
-- U.S. Bureau of Labor Statistics, Data Scientists: https://www.bls.gov/ooh/math/data-scientists.htm
+- U.S. Bureau of Labor Statistics, OEWS May 2024 (Data Scientists): https://www.bls.gov/news.release/archives/ocwage_04022025.pdf
