@@ -8,6 +8,10 @@
 
 [![Railway Deploy](https://img.shields.io/badge/Deploy-Railway-blueviolet)](https://railway.app) [![Vercel Deploy](https://img.shields.io/badge/Deploy-Vercel-black)](https://vercel.com) [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org) [![FastAPI](https://img.shields.io/badge/FastAPI-Framework-green)](https://fastapi.tiangolo.com) [![LangChain](https://img.shields.io/badge/LangChain-Integration-orange)](https://langchain.com)
 
+## Business case
+
+Teams shipping LLM features need test questions before they can measure quality, and writing hundreds of good questions by hand is slow. EvolSynth-API turns a team's own documents into evolved question sets, with answers and source contexts, and scores them with an LLM judge, so evaluation can start much sooner. Reviewers still check the output, but they edit instead of writing from scratch. [docs/BUSINESS_CASE.md](docs/BUSINESS_CASE.md) covers the buyers, use cases, ROI model and limits.
+
 ## 🎯 **What is EvolSynth?**
 
 **EvolSynth API** is a production-ready synthetic data generation platform that implements the revolutionary **Evol-Instruct methodology** to create high-quality evaluation datasets. Unlike traditional question generators, EvolSynth evolves simple questions into progressively complex reasoning challenges through systematic transformation.
